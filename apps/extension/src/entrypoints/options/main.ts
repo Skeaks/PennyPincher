@@ -2,6 +2,8 @@ import { browser } from "wxt/browser";
 import { CONSENT_PAGE } from "../../lib/bootstrap";
 import { CONSENT_VERSION, getConsent, hasConsent, revokeConsent } from "../../lib/consent";
 import { el, mount } from "../../lib/dom";
+import { clearProbeState, loadProbeState } from "../../probe/state";
+import { probeSummaryElement } from "../../probe/summary";
 import { clear, count, exportAll } from "../../store";
 
 function exportFilename(now: Date): string {
@@ -36,7 +38,12 @@ function consentStatusText(
 }
 
 async function render(): Promise<void> {
-  const [consented, record, rows] = await Promise.all([hasConsent(), getConsent(), count()]);
+  const [consented, record, rows, probes] = await Promise.all([
+    hasConsent(),
+    getConsent(),
+    count(),
+    loadProbeState(),
+  ]);
 
   const reviewButton = el("button", { type: "button", text: "Review consent" });
   reviewButton.addEventListener("click", () => {
@@ -50,7 +57,7 @@ async function render(): Promise<void> {
 
   const deleteButton = el("button", { type: "button", class: "danger", text: "Delete my data" });
   deleteButton.addEventListener("click", () => {
-    void clear().then(render);
+    void Promise.all([clear(), clearProbeState()]).then(render);
   });
 
   const withdrawButton = el("button", {
@@ -72,12 +79,22 @@ async function render(): Promise<void> {
         el("dt", { text: "Stored on this computer" }),
         el("dd", { id: "row-count", text: `${rows} price observation${rows === 1 ? "" : "s"}` }),
         el("dt", { text: "Sent anywhere" }),
-        el("dd", { text: "Nothing. This version makes no network requests." }),
+        el("dd", {
+          text:
+            "Nothing about you. To compare prices, the extension requests the public page of " +
+            "the product you are viewing, without your sign-in, at most once an hour per product.",
+        }),
       ]),
       el("div", { class: "row" }, [reviewButton, exportButton]),
+      el("h2", { text: "Anonymous price checks" }),
+      el("p", {
+        class: "muted",
+        text: "Per retailer: checks run, price differences found, and checks that produced no anonymous price.",
+      }),
+      probeSummaryElement(probes),
       el("h2", { text: "Delete" }),
       el("p", {
-        text: "Delete my data removes every observation stored on this computer. Withdraw consent turns the extension off until you agree again.",
+        text: "Delete my data removes every observation and price check stored on this computer. Withdraw consent turns the extension off until you agree again.",
       }),
       el("div", { class: "row" }, [deleteButton, withdrawButton]),
     ]),

@@ -19,6 +19,7 @@
   "devDependencies": {
     "@types/node": "22.10.5",
     "@webext-core/fake-browser": "2.0.1",
+    "happy-dom": "15.11.7",
     "typescript": "5.7.3",
     "vitest": "3.0.5"
   }

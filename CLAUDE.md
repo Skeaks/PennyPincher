@@ -67,7 +67,10 @@ Stack: TypeScript everywhere, pnpm workspaces, Biome (lint + format), Vitest, Zo
 
 ## Git and GitHub
 
-Remote: `https://github.com/Skeaks/PennyPincher.git`, default branch `main`.
+Remote: `https://github.com/Skeaks/PennyPincher.git`, default branch `main`. Everything on GitHub for
+this project is the **Skeaks** account. This machine also has a JamieLee04 login for other
+projects, so run `gh auth switch --user Skeaks` at the start of every session before any `gh`
+command; otherwise PR creation fails with "must be a collaborator".
 
 You may, without asking: create branches, commit, push your own feature branch, open PRs,
 merge your own PR once CI is green and a review session has signed off (`gh pr merge --squash

@@ -1,0 +1,20 @@
+{
+  "retailer": "target",
+  "capturedAt": "2026-09-04T15:28:29Z",
+  "fulfillment": "pickup",
+  "sessionState": "logged_in",
+  "zip3": "085",
+  "store": {
+    "retailerStoreId": "1872",
+    "label": "Durham"
+  },
+  "expected": {
+    "price": {
+      "amountMinor": 299,
+      "currency": "USD"
+    },
+    "priceText": "$2.99",
+    "title": "Hass Avocados - 4ct - Good & Gather™",
+    "retailerSku": "81957708"
+  }
+}

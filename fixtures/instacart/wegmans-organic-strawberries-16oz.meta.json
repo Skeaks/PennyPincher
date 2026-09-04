@@ -1,0 +1,20 @@
+{
+  "retailer": "instacart",
+  "capturedAt": "2026-09-04T15:34:11Z",
+  "fulfillment": "delivery",
+  "sessionState": "logged_in",
+  "zip3": "085",
+  "store": {
+    "retailerStoreId": "10769",
+    "label": "Wegmans"
+  },
+  "expected": {
+    "price": {
+      "amountMinor": 689,
+      "currency": "USD"
+    },
+    "priceText": "$6.89",
+    "title": "Organic Strawberries",
+    "retailerSku": "17327037"
+  }
+}

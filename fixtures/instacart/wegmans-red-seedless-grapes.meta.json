@@ -1,0 +1,21 @@
+{
+  "retailer": "instacart",
+  "capturedAt": "2026-09-04T15:32:29Z",
+  "fulfillment": "delivery",
+  "sessionState": "logged_in",
+  "zip3": "085",
+  "store": {
+    "retailerStoreId": "10769",
+    "label": "Wegmans"
+  },
+  "expected": {
+    "price": {
+      "amountMinor": 458,
+      "currency": "USD"
+    },
+    "priceText": "$4.58",
+    "title": "Wegmans Red Seedless Grapes, Bagged",
+    "retailerSku": "34780662"
+  },
+  "notes": "Per-lb bagged item; price shows as \"$4.58 /pkg (est.)\"."
+}

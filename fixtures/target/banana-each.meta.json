@@ -1,0 +1,21 @@
+{
+  "retailer": "target",
+  "capturedAt": "2026-09-04T15:26:18Z",
+  "fulfillment": "pickup",
+  "sessionState": "logged_in",
+  "zip3": "085",
+  "store": {
+    "retailerStoreId": "1872",
+    "label": "Durham"
+  },
+  "expected": {
+    "price": {
+      "amountMinor": 29,
+      "currency": "USD"
+    },
+    "priceText": "$0.29",
+    "title": "Fresh Banana - each - Good & Gather™",
+    "retailerSku": "15013944"
+  },
+  "notes": "STORE_DIFFERS from banana-each-logged-out.html (Princeton). Ship-to ZIP on the page is still 085xx."
+}

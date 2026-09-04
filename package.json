@@ -16,7 +16,8 @@
     "test:watch": "vitest",
     "guard": "bash scripts/check-escape-hatches.sh && bash scripts/check-forbidden-api.sh",
     "gate": "pnpm lint && pnpm typecheck && pnpm test && pnpm guard",
-    "build": "pnpm -r --if-present build"
+    "build": "pnpm -r --if-present build",
+    "scrub": "pnpm --filter @pennypincher/scrub scrub"
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",

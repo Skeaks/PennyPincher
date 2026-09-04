@@ -1,0 +1,21 @@
+{
+  "retailer": "walmart",
+  "capturedAt": "2026-09-04T14:42:32Z",
+  "fulfillment": "pickup",
+  "sessionState": "logged_out",
+  "zip3": "085",
+  "store": {
+    "retailerStoreId": "3266",
+    "label": "East Windsor Supercenter"
+  },
+  "expected": {
+    "price": {
+      "amountMinor": 6,
+      "currency": "USD"
+    },
+    "priceText": "$0.06",
+    "title": "Fresh Banana, Each",
+    "retailerSku": "44390948"
+  },
+  "notes": "Price shows as \"$0.06\" with \"16.0 ¢/lb\" unit price. Pair of fresh-banana-each.html (same store)."
+}

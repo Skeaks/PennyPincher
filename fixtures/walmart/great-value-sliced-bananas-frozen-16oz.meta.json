@@ -1,0 +1,20 @@
+{
+  "retailer": "walmart",
+  "capturedAt": "2026-09-04T15:32:30Z",
+  "fulfillment": "pickup",
+  "sessionState": "logged_in",
+  "zip3": "085",
+  "store": {
+    "retailerStoreId": "3266",
+    "label": "East Windsor Supercenter"
+  },
+  "expected": {
+    "price": {
+      "amountMinor": 247,
+      "currency": "USD"
+    },
+    "priceText": "$2.47",
+    "title": "Great Value Sliced Bananas, 16 oz Bag",
+    "retailerSku": "14336395"
+  }
+}

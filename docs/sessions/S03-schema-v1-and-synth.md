@@ -4,6 +4,7 @@ title: Schema 1.0.0 + synthetic ladders
 role: schema, stats
 depends_on: [S02]
 owns:
+  - docs/sessions/S03.outcome.md
   - packages/schema/**
   - packages/synth/**
   - docs/migrations/**

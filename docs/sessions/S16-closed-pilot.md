@@ -4,6 +4,7 @@ title: Closed pilot + variance gate
 role: all
 depends_on: [S15]
 owns:
+  - docs/sessions/S16.outcome.md
   - docs/pilot/**
   - packages/stats/**      # recalibration only
 human_review_required: true

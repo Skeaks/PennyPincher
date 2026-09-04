@@ -4,6 +4,7 @@ title: Adapters 2 and 3 + health beacon
 role: capture
 depends_on: [S05]
 owns:
+  - docs/sessions/S12.outcome.md
   - apps/extension/src/capture/adapters/target.ts
   - apps/extension/src/capture/adapters/walmart.ts
   - apps/extension/src/capture/health.ts

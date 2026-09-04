@@ -4,6 +4,7 @@ title: Fixture recorder + first snapshots
 role: capture
 depends_on: [S00]
 owns:
+  - docs/sessions/S02.outcome.md
   - tools/scrub/**
   - fixtures/**
   - docs/fixtures.md

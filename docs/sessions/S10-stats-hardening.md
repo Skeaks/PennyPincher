@@ -4,6 +4,7 @@ title: Stats hardening
 role: stats, platform
 depends_on: [S09]
 owns:
+  - docs/sessions/S10.outcome.md
   - packages/stats/**
   - .github/workflows/nightly.yml   # separate PR, boundary-guard
 ---

@@ -4,6 +4,7 @@ title: Ingest hardening + deletion
 role: ingest, capture
 depends_on: [S07]
 owns:
+  - docs/sessions/S14.outcome.md
   - apps/api/**
   - apps/extension/src/identity/**
 ---

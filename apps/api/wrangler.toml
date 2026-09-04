@@ -27,7 +27,7 @@ name = "pennypincher-api-staging"
 [[env.staging.d1_databases]]
 binding = "DB"
 database_name = "pennypincher-staging"
-database_id = "437f30bb-1491-432e-9c70-f8384f598963"
+database_id = "00000000-0000-0000-0000-000000000000"
 migrations_dir = "migrations"
 
 [env.production]

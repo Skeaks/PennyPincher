@@ -11,6 +11,7 @@ import {
   requireConsent,
   revokeConsent,
 } from "../src/lib/consent";
+import { CONSENT_COPY } from "../src/lib/copy";
 import { append, count } from "../src/store";
 import { validObservation } from "./fixtures";
 
@@ -116,5 +117,44 @@ describe("consent prompt on install", () => {
     // Listeners are fire-and-forget; let the promises settle.
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(opened).toHaveLength(2);
+  });
+});
+
+describe("consent copy", () => {
+  const C = CONSENT_COPY;
+  const all = [
+    C.title,
+    C.intro,
+    ...C.collected,
+    ...C.notCollected,
+    ...C.howItWorks,
+    C.deleteEverything,
+    C.optInLabel,
+    C.acceptButton,
+    C.acceptedTitle,
+    C.acceptedBody,
+  ].join(" ");
+
+  it("describes the anonymous logged-out page request the lever probe makes (S06)", () => {
+    const how = C.howItWorks.join(" ");
+    expect(how).toMatch(/public page of the product you are viewing/i);
+    expect(how).toMatch(/not signed in/i);
+    expect(how).toMatch(/without your cookies, sign-in, or any credentials/i);
+    expect(how).toMatch(/at most once per product per hour/i);
+    expect(how).toMatch(/stops rather than follow/i);
+  });
+
+  it("no longer claims the extension makes no network requests", () => {
+    expect(all).not.toMatch(/no network requests/i);
+  });
+
+  it("is versioned: the probe copy is consent version 2 or later, so v1 users are re-asked", () => {
+    expect(CONSENT_VERSION).toBeGreaterThanOrEqual(2);
+  });
+
+  it("uses no regulated claim words", () => {
+    expect(all).not.toMatch(
+      /\b(save|saves|saving|savings|cheapest|cheaper|lowest price|guarantee[sd]?)\b/i,
+    );
   });
 });

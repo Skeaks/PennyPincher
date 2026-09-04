@@ -27,11 +27,19 @@ public product page **logged out** and compares. Read ADR 0003 before writing a 
 - If the logged-out page has no price (login wall, bot check, different layout), record
   `{ ok: false, reason }` in a `probeFailures` counter per retailer and do nothing else. Never
   retry within the hour. Never follow redirects to auth pages.
+- **Same-store rule.** A comparison is only valid when the logged-out page resolved to the
+  same `store.retailerStoreId` as the logged-in observation. Retailers assign a store on
+  login (Target moved Jamie from Princeton to Durham on sign-in during S02's captures, and the
+  banana went from $0.39 to $0.29 with it). If the stores differ, the result is
+  `STORE_DIFFERS`, shown as "Anonymous visitors are served a different store", and the pair is
+  still stored (both observations, with their stores) because the panel can use it.
 - Popup (minimal): for the current tab's product, show "Your price", "Anonymous price", and one
-  of: `Same`, `You pay $X more`, `You pay $X less`, `Could not check`. No savings language.
+  of: `Same`, `You pay $X more`, `You pay $X less`, `Store differs`, `Could not check`. No
+  savings language.
 - A `probes` summary in options: per retailer, checks run, differences found, failures.
 - Tests on fixtures: logged-in fixture + logged-out fixture for the same SKU produce the
-  expected comparison; a login-wall fixture produces `Could not check`.
+  expected comparison; the Target banana pair produces `STORE_DIFFERS`; a login-wall fixture
+  produces `Could not check`.
 - `scripts/check-forbidden-api.sh` clean. Manifest unchanged except `alarms` (already present).
 
 ## Out of scope

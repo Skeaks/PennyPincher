@@ -15,7 +15,7 @@ and do that session."*
 | [S01](S01-gate-self-test.md) | Gate self-test + nightly skeleton | Platform | S00 | Four bad PRs rejected (`docs/audit/S01-gate-self-test.md`); `nightly.yml`. **Done 2026-09-04.** |
 | [S02](S02-fixture-recorder.md) | Fixture recorder + first snapshots | Capture | S00 | `tools/scrub`, scrubbed Instacart/Target/Walmart pages in `fixtures/` |
 | [S03](S03-schema-v1-and-synth.md) | Schema 1.0.0 + synthetic ladders | Schema, Stats | S02 | Schema revised against real pages; `packages/synth` |
-| [S04](S04-extension-skeleton.md) | Extension skeleton + consent | Capture | S00 | WXT MV3 app, consent gate, options page, local store, no network |
+| [S04](S04-extension-skeleton.md) | Extension skeleton + consent | Capture | S00 | WXT MV3 app, consent gate, options page, local store, no network. **Done 2026-09-04.** |
 | [S05](S05-instacart-adapter.md) | Adapter interface + Instacart adapter | Capture | S02, S03, S04 | Passive capture producing valid observations, tested on fixtures |
 | [S06](S06-lever-probe.md) | Lever probe v1 | Capture | S05 | "Your price vs anonymous price" in the popup. **Decision data starts here.** |
 | [S07](S07-api-ingest.md) | Ingest API | Ingest | S03 | Hono Worker + D1, validation, idempotency, PII guard |

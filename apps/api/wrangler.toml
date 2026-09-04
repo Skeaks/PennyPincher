@@ -1,0 +1,41 @@
+# PennyPincher ingest API (S07). All non-secret config lives here so a fresh clone deploys
+# correctly (CONTRIBUTING.md). Secrets (the pilot bearer token, S08) are set with
+# `wrangler secret put` and never appear in this file.
+#
+# database_id for staging and production are placeholders until the D1 databases exist:
+#   wrangler d1 create pennypincher-staging
+#   wrangler d1 create pennypincher-production
+# then paste the ids below (S08). Local `wrangler dev` runs D1 in-process under .wrangler/
+# (gitignored) and never contacts Cloudflare, so the top-level id is only a label.
+
+name = "pennypincher-api"
+main = "src/index.ts"
+compatibility_date = "2026-08-01"
+
+[observability]
+enabled = true
+
+# Local dev: `pnpm --filter api dev` applies migrations to the local D1, then serves.
+[[d1_databases]]
+binding = "DB"
+database_name = "pennypincher-dev"
+database_id = "local-dev"
+migrations_dir = "migrations"
+
+[env.staging]
+name = "pennypincher-api-staging"
+
+[[env.staging.d1_databases]]
+binding = "DB"
+database_name = "pennypincher-staging"
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "migrations"
+
+[env.production]
+name = "pennypincher-api"
+
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "pennypincher-production"
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "migrations"

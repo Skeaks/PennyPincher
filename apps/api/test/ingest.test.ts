@@ -1,5 +1,7 @@
 import { SCHEMA_VERSION } from "@pennypincher/schema";
 import { describe, expect, it } from "vitest";
+import { createApp } from "../src/app";
+import { MemoryObservationRepo } from "../src/repo/memory";
 import { FIXED_NOW, testApp, uuidFor, validObservation } from "./fixtures";
 
 describe("GET /healthz", () => {
@@ -7,7 +9,7 @@ describe("GET /healthz", () => {
     const { app } = testApp();
     const res = await app.request("/healthz");
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ ok: true, schemaVersion: SCHEMA_VERSION });
+    expect(await res.json()).toEqual({ ok: true, schemaVersion: SCHEMA_VERSION, build: "dev" });
   });
 });
 
@@ -150,5 +152,81 @@ describe("unknown routes", () => {
     const res = await app.request("/v1/nope");
     expect(res.status).toBe(404);
     expect(await res.json()).toEqual({ errors: ["not found"] });
+  });
+});
+
+describe("GET /healthz build", () => {
+  it("reports the build SHA the deploy job injected", async () => {
+    const app = createApp<{ BUILD_SHA?: string }>({
+      repo: () => new MemoryObservationRepo(),
+      build: (env) => env.BUILD_SHA,
+    });
+    const res = await app.request("/healthz", {}, { BUILD_SHA: "abc1234" });
+    expect(await res.json()).toMatchObject({ ok: true, build: "abc1234" });
+  });
+
+  it('reports "dev" when no build is configured', async () => {
+    const { app } = testApp();
+    expect(await (await app.request("/healthz")).json()).toMatchObject({ build: "dev" });
+  });
+});
+
+describe("POST /v1/observations bearer token", () => {
+  const TOKEN = "0123456789abcdef0123456789abcdef";
+  function protectedApp() {
+    const repo = new MemoryObservationRepo();
+    const app = createApp<{ PILOT_TOKEN?: string }>({
+      repo: () => repo,
+      now: () => FIXED_NOW,
+      pilotToken: (env) => env.PILOT_TOKEN,
+    });
+    const post = (headers: Record<string, string>, env: { PILOT_TOKEN?: string }) =>
+      app.request(
+        "/v1/observations",
+        {
+          method: "POST",
+          headers: { "content-type": "application/json", ...headers },
+          body: JSON.stringify({ observations: [validObservation()] }),
+        },
+        env,
+      );
+    return { repo, post };
+  }
+
+  it("accepts the configured bearer", async () => {
+    const { repo, post } = protectedApp();
+    const res = await post({ authorization: `Bearer ${TOKEN}` }, { PILOT_TOKEN: TOKEN });
+    expect(res.status).toBe(201);
+    expect(repo.rows.size).toBe(1);
+  });
+
+  it("rejects a missing, wrong, or non-bearer Authorization header with 401", async () => {
+    const { repo, post } = protectedApp();
+    const env = { PILOT_TOKEN: TOKEN };
+    for (const headers of [
+      {},
+      { authorization: `Bearer ${TOKEN.slice(0, -1)}x` },
+      { authorization: `Bearer ${TOKEN}extra` },
+      { authorization: `Basic ${TOKEN}` },
+      { authorization: TOKEN },
+    ]) {
+      const res = await post(headers, env);
+      expect(res.status).toBe(401);
+      expect(await res.json()).toEqual({ errors: ["unauthorized"] });
+    }
+    expect(repo.rows.size).toBe(0);
+  });
+
+  it("is open when no token is configured (local dev)", async () => {
+    const { post } = protectedApp();
+    expect((await post({}, {})).status).toBe(201);
+  });
+
+  it("does not gate /healthz", async () => {
+    const app = createApp<{ PILOT_TOKEN?: string }>({
+      repo: () => new MemoryObservationRepo(),
+      pilotToken: (env) => env.PILOT_TOKEN,
+    });
+    expect((await app.request("/healthz", {}, { PILOT_TOKEN: TOKEN })).status).toBe(200);
   });
 });

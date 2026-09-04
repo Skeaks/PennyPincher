@@ -16,6 +16,11 @@ export type PopupView =
   | { kind: "unsupported" }
   /** A supported product page, but no price has been recorded for it yet. */
   | { kind: "no_observation" }
+  /**
+   * The recorded price came from a session that was not signed in, so there is nothing to
+   * compare against: the probe only runs for `logged_in` observations and will never run here.
+   */
+  | { kind: "not_signed_in"; mine: PricePoint }
   /** The user's price is recorded; the anonymous check has not produced a result yet. */
   | { kind: "pending"; mine: PricePoint }
   /** A probe result exists for this product. */
@@ -47,7 +52,14 @@ export function popupView(inputs: PopupInputs): PopupView {
   if (url === undefined || !findAdapter(url, ADAPTERS)) return { kind: "unsupported" };
   const mine = latestOwnObservation(inputs.observations, url);
   if (!mine) return { kind: "no_observation" };
+  if (mine.context.sessionState !== "logged_in")
+    return { kind: "not_signed_in", mine: pricePoint(mine) };
   const result = inputs.probe.results[probeKey(mine.retailer, mine.product.retailerSku)];
-  if (result && result.url === url) return { kind: "result", result };
+  // A result is only shown for the price the user is looking at now. Capture stores a fresh row
+  // on every load while the probe runs once an hour, so a cached pair can predate a price change;
+  // the observation id changes on every reload, so the price itself is the match.
+  if (result && result.url === url && result.mine.amountMinor === mine.facts.price.amountMinor) {
+    return { kind: "result", result };
+  }
   return { kind: "pending", mine: pricePoint(mine) };
 }

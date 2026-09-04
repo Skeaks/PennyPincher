@@ -3,9 +3,8 @@
  * network request, it is the probe's fetch, it runs with `credentials: "omit"`, and it never
  * follows a redirect. Everything else the S04 posture test forbids stays forbidden.
  *
- * This is the successor to the "no network" block of test/posture.test.ts, which pinned the
- * S04 world where nothing fetched at all. That block now fails on `probe/fetch.ts` by design;
- * replacing it is Jamie's call (it is outside this session's `owns:`), so it is left as is.
+ * This replaced the "no network" block of test/posture.test.ts, which pinned the S04 world
+ * where nothing fetched at all (deleted in PR #16 on Jamie's decision, 2026-09-04).
  */
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";

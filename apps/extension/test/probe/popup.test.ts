@@ -82,6 +82,44 @@ describe("popupView", () => {
     });
   });
 
+  it("does not show a result computed against a price the page no longer shows", () => {
+    // The probe ran an hour ago at $0.22; the page now shows $0.25 and capture stored it.
+    const probe = emptyProbeState();
+    probe.results[result().key] = result({ verdict: "SAME", deltaMinor: 0 });
+    const repriced = {
+      ...mine,
+      observationId: "11111111-0000-4000-8000-000000000003",
+      observedAt: "2026-09-04T16:00:00.000Z",
+      facts: {
+        ...mine.facts,
+        price: { amountMinor: 25, currency: "USD" as const },
+        priceText: "$0.25",
+      },
+    };
+    expect(
+      popupView({ consented: true, tabUrl: URL_BANANAS, observations: [mine, repriced], probe }),
+    ).toMatchObject({ kind: "pending", mine: { amountMinor: 25, priceText: "$0.25" } });
+    // Same price again on a later reload (new observation id): the result still applies.
+    const reloaded = { ...mine, observationId: "11111111-0000-4000-8000-000000000004" };
+    expect(
+      popupView({ consented: true, tabUrl: URL_BANANAS, observations: [reloaded], probe }),
+    ).toMatchObject({ kind: "result" });
+  });
+
+  it("says there is nothing to compare when the recorded price was not from a signed-in session", () => {
+    const anon = ownInstacartObservation(loggedOut, URL_BANANAS);
+    expect(anon.context.sessionState).toBe("logged_out");
+    const probe = emptyProbeState();
+    expect(
+      popupView({ consented: true, tabUrl: URL_BANANAS, observations: [anon], probe }),
+    ).toMatchObject({ kind: "not_signed_in", mine: { amountMinor: 22 } });
+    // A cached result for the SKU does not change that: the probe never runs for this row.
+    probe.results[result().key] = result();
+    expect(
+      popupView({ consented: true, tabUrl: URL_BANANAS, observations: [anon], probe }),
+    ).toMatchObject({ kind: "not_signed_in" });
+  });
+
   it("never treats the probe's own anonymous row as the user's price", () => {
     const anon = ownInstacartObservation(
       loggedOut,

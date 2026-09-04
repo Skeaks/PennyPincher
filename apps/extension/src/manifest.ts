@@ -3,7 +3,8 @@
  *
  * Permissions are the whole legal posture of the extension (docs/decisions/0003-capture-posture.md):
  *   - host_permissions: only the three retailers we have adapters for. Subdomains allowed.
- *   - permissions: `storage` (the local observation store) and `alarms` (future scheduling).
+ *   - permissions: `storage` (the local observation store) and `alarms` (the lever probe's
+ *     hourly rate-table prune, `src/probe/background.ts`).
  *   - Nothing else. No `cookies`, no `webRequest`, no `tabs`, no `scripting`.
  */
 export const HOST_PERMISSIONS = [

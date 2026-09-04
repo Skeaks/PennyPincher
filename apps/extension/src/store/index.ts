@@ -6,7 +6,8 @@
  *  - Appends require current consent (`requireConsent`).
  *  - Capped at MAX_ROWS. When full, the oldest rows are dropped (FIFO).
  *  - Rows are never edited in place. The only mutations are append and clear-all.
- *  - Nothing here talks to the network. There is no fetch in this extension (S04).
+ *  - Nothing here talks to the network. The only fetch in the extension is the lever probe's
+ *    (`src/probe/fetch.ts`), which appends its result through this store like any other row.
  */
 import {
   type PriceObservation,

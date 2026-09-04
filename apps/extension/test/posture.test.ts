@@ -41,7 +41,7 @@ describe("manifest", () => {
     expect(manifest.host_permissions).toEqual(HOST_PERMISSIONS);
   });
 
-  it("declares no content scripts (nothing reads a page until S05)", () => {
+  it("declares no content scripts in the manifest object (WXT registers them from src/entrypoints/*.content.ts)", () => {
     expect("content_scripts" in manifest).toBe(false);
   });
 });

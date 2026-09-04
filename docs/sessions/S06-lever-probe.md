@@ -4,6 +4,7 @@ title: Lever probe v1
 role: capture
 depends_on: [S05]
 owns:
+  - docs/sessions/S06.outcome.md
   - apps/extension/src/probe/**
   - apps/extension/src/popup/**
   - apps/extension/test/probe/**

@@ -4,6 +4,7 @@ title: Adapter interface + Instacart adapter
 role: capture
 depends_on: [S02, S03, S04]
 owns:
+  - docs/sessions/S05.outcome.md
   - apps/extension/src/capture/**
   - apps/extension/test/capture/**
 human_review_required: true   # capture code is a human-locked path

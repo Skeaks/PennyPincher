@@ -4,6 +4,7 @@ title: Query API + ladder popup
 role: ingest, capture
 depends_on: [S07, S09]
 owns:
+  - docs/sessions/S11.outcome.md
   - apps/api/src/routes/cells.ts
   - apps/api/test/cells.test.ts
   - apps/extension/src/popup/**

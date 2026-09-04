@@ -4,6 +4,7 @@ title: Pilot pack
 role: compliance, web, platform
 depends_on: [S06, S11, S14]
 owns:
+  - docs/sessions/S15.outcome.md
   - docs/compliance/**
   - apps/extension/src/copy/**
   - apps/web/**

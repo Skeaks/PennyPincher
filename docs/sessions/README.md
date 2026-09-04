@@ -12,7 +12,7 @@ and do that session."*
 | Id | Title | Role | Depends on | Ships |
 |---|---|---|---|---|
 | S00 | Foundation | Platform | | This repo: gate, schema 0.1.0, docs. **Done 2026-09-04.** |
-| [S01](S01-gate-self-test.md) | Gate self-test + nightly skeleton | Platform | S00 | Proof the gate rejects four bad PRs; `nightly.yml` stub |
+| [S01](S01-gate-self-test.md) | Gate self-test + nightly skeleton | Platform | S00 | Four bad PRs rejected (`docs/audit/S01-gate-self-test.md`); `nightly.yml`. **Done 2026-09-04.** |
 | [S02](S02-fixture-recorder.md) | Fixture recorder + first snapshots | Capture | S00 | `tools/scrub`, scrubbed Instacart/Target/Walmart pages in `fixtures/` |
 | [S03](S03-schema-v1-and-synth.md) | Schema 1.0.0 + synthetic ladders | Schema, Stats | S02 | Schema revised against real pages; `packages/synth` |
 | [S04](S04-extension-skeleton.md) | Extension skeleton + consent | Capture | S00 | WXT MV3 app, consent gate, options page, local store, no network |

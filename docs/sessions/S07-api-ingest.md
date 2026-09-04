@@ -4,6 +4,7 @@ title: Ingest API
 role: ingest
 depends_on: [S03]
 owns:
+  - docs/sessions/S07.outcome.md
   - apps/api/**
 ---
 

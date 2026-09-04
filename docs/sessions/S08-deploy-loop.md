@@ -4,6 +4,7 @@ title: Deploy loop
 role: platform
 depends_on: [S07]
 owns:
+  - docs/sessions/S08.outcome.md
   - .github/workflows/deploy.yml
   - docs/deploy.md
 human_review_required: true   # gate

@@ -4,6 +4,7 @@ title: Tier resolution + confidence + UNRESOLVED
 role: stats
 depends_on: [S03]
 owns:
+  - docs/sessions/S09.outcome.md
   - packages/stats/**
 human_review_required: true   # the integrity-critical module
 ---

@@ -4,6 +4,7 @@ title: Extension skeleton + consent
 role: capture
 depends_on: [S00]
 owns:
+  - docs/sessions/S04.outcome.md
   - apps/extension/**
 ---
 

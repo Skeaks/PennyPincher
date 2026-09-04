@@ -4,6 +4,7 @@ title: Product identity
 role: ingest
 depends_on: [S07]
 owns:
+  - docs/sessions/S13.outcome.md
   - packages/normalize/**
   - apps/api/src/repo/products.ts
 human_review_required: true   # golden fixtures

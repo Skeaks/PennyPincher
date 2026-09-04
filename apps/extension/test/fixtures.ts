@@ -1,9 +1,9 @@
-import type { PriceObservation } from "@pennypincher/schema";
+import { type PriceObservation, SCHEMA_VERSION } from "@pennypincher/schema";
 
 /** A valid observation for store tests. Mirrors packages/schema/test/fixtures.ts. */
 export function validObservation(overrides: Partial<PriceObservation> = {}): PriceObservation {
   return {
-    schemaVersion: "0.1.0",
+    schemaVersion: SCHEMA_VERSION,
     observationId: "6f1a2b3c-4d5e-4f60-8a7b-9c0d1e2f3a4b",
     panelistId: "0b1c2d3e-4f50-4a61-9b72-83c4d5e6f7a8",
     observedAt: "2026-09-04T14:03:22.000Z",
@@ -19,6 +19,8 @@ export function validObservation(overrides: Partial<PriceObservation> = {}): Pri
     },
     facts: {
       price: { amountMinor: 89, currency: "USD" },
+      priceText: "$0.89",
+      isEstimate: false,
       promoTags: [],
       memberPrice: false,
     },

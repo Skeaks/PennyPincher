@@ -1,3 +1,4 @@
+import { SCHEMA_VERSION } from "@pennypincher/schema";
 import { beforeEach, describe, expect, it } from "vitest";
 import { fakeBrowser } from "wxt/testing/fake-browser";
 import { acceptConsent } from "../src/lib/consent";
@@ -110,7 +111,7 @@ describe("clear and export", () => {
     const file = await exportAll(now);
     expect(file).toEqual({
       exportedAt: now.toISOString(),
-      schemaVersion: "0.1.0",
+      schemaVersion: SCHEMA_VERSION,
       consent: { version: 1, acceptedAt: "2026-09-04T10:00:00.000Z" },
       observations: [validObservation()],
     });

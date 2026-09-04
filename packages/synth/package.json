@@ -1,8 +1,8 @@
 {
-  "name": "@pennypincher/schema",
-  "version": "1.0.0",
+  "name": "@pennypincher/synth",
+  "version": "0.1.0",
   "private": true,
-  "description": "The observation contract. Every price the panel captures is validated against this before it is stored. Versioned; bump SCHEMA_VERSION and add a docs/migrations entry on any breaking change.",
+  "description": "Synthetic price ladders with known ground truth. Generates valid PriceObservations from a chosen tier distribution so the stats engine can be tested against answers known by construction.",
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
@@ -14,7 +14,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "zod": "3.24.1"
+    "@pennypincher/schema": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "22.10.5"

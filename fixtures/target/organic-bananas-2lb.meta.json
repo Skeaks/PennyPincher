@@ -1,0 +1,20 @@
+{
+  "retailer": "target",
+  "capturedAt": "2026-09-04T15:27:29Z",
+  "fulfillment": "pickup",
+  "sessionState": "logged_in",
+  "zip3": "085",
+  "store": {
+    "retailerStoreId": "1872",
+    "label": "Durham"
+  },
+  "expected": {
+    "price": {
+      "amountMinor": 179,
+      "currency": "USD"
+    },
+    "priceText": "$1.79",
+    "title": "Fresh Organic Bananas - 2lb - Good & Gather™",
+    "retailerSku": "85759852"
+  }
+}

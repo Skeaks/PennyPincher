@@ -1,0 +1,22 @@
+{
+  "name": "@pennypincher/scrub",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Fixture scrubber. Turns a raw retailer page capture (fixtures/raw/, gitignored) into a committed fixture with scripts, styles, tracking attributes and PII removed, and checks committed fixtures for leaks.",
+  "type": "module",
+  "scripts": {
+    "scrub": "tsx src/cli.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "parse5": "7.2.1",
+    "zod": "3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "22.10.5",
+    "tsx": "4.19.2",
+    "typescript": "5.7.3",
+    "vitest": "3.0.5"
+  }
+}

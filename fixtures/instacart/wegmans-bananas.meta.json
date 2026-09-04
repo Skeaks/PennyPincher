@@ -1,0 +1,21 @@
+{
+  "retailer": "instacart",
+  "capturedAt": "2026-09-04T15:26:18Z",
+  "fulfillment": "delivery",
+  "sessionState": "logged_in",
+  "zip3": "085",
+  "store": {
+    "retailerStoreId": "10769",
+    "label": "Wegmans"
+  },
+  "expected": {
+    "price": {
+      "amountMinor": 22,
+      "currency": "USD"
+    },
+    "priceText": "$0.22",
+    "title": "Bananas, Sold by the Each",
+    "retailerSku": "2748189"
+  },
+  "notes": "Price shows as \"$0.22 each (est.)\" with \"$0.59 / lb\" unit price. Pair of wegmans-bananas-logged-out.html (same store)."
+}

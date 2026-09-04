@@ -1,0 +1,21 @@
+{
+  "retailer": "walmart",
+  "capturedAt": "2026-09-04T15:34:11Z",
+  "fulfillment": "pickup",
+  "sessionState": "logged_in",
+  "zip3": "085",
+  "store": {
+    "retailerStoreId": "3266",
+    "label": "East Windsor Supercenter"
+  },
+  "expected": {
+    "price": {
+      "amountMinor": 174,
+      "currency": "USD"
+    },
+    "priceText": "$1.74",
+    "title": "Marketside Fresh Organic Bananas, Bunch",
+    "retailerSku": "51259338"
+  },
+  "notes": "Captured with the store header collapsed; the store id comes from the capture log."
+}

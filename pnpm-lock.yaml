@@ -50,6 +50,16 @@ importers:
         specifier: 22.10.5
         version: 22.10.5
 
+  packages/synth:
+    dependencies:
+      '@pennypincher/schema':
+        specifier: workspace:*
+        version: link:../schema
+    devDependencies:
+      '@types/node':
+        specifier: 22.10.5
+        version: 22.10.5
+
   tools/scrub:
     dependencies:
       parse5:

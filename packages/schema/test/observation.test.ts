@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  Fulfillment,
   PriceObservation,
+  Retailer,
   SCHEMA_VERSION,
+  StoreRef,
+  Surface,
   findForbiddenKeys,
   parseObservationBatch,
 } from "../src/index";
@@ -13,14 +17,20 @@ describe("PriceObservation", () => {
   });
 
   it("pins the schema version", () => {
-    const bad = { ...validObservation(), schemaVersion: "9.9.9" };
+    const bad = { ...validObservation(), schemaVersion: "0.1.0" };
     expect(PriceObservation.safeParse(bad).success).toBe(false);
-    expect(SCHEMA_VERSION).toBe("0.1.0");
+    expect(SCHEMA_VERSION).toBe("1.0.0");
   });
 
   it("rejects float money", () => {
     const bad = validObservation({
-      facts: { price: { amountMinor: 0.89, currency: "USD" }, promoTags: [], memberPrice: false },
+      facts: {
+        price: { amountMinor: 0.89, currency: "USD" },
+        priceText: "$0.89",
+        isEstimate: false,
+        promoTags: [],
+        memberPrice: false,
+      },
     });
     expect(PriceObservation.safeParse(bad).success).toBe(false);
   });
@@ -46,13 +56,39 @@ describe("PriceObservation", () => {
     expect(PriceObservation.safeParse(bad).success).toBe(false);
   });
 
-  it("defaults promoTags and memberPrice", () => {
+  it("defaults promoTags, memberPrice and isEstimate", () => {
     const parsed = PriceObservation.parse({
       ...validObservation(),
-      facts: { price: { amountMinor: 89, currency: "USD" } },
+      facts: { price: { amountMinor: 89, currency: "USD" }, priceText: "$0.89" },
     });
     expect(parsed.facts.promoTags).toEqual([]);
     expect(parsed.facts.memberPrice).toBe(false);
+    expect(parsed.facts.isEstimate).toBe(false);
+  });
+
+  it("requires the rendered price text (1.0.0)", () => {
+    const { priceText: _dropped, ...factsWithoutText } = validObservation().facts;
+    const bad = { ...validObservation(), facts: factsWithoutText };
+    expect(PriceObservation.safeParse(bad).success).toBe(false);
+  });
+
+  it("accepts a store with only a label, as Walmart pages give (1.0.0)", () => {
+    const ok = validObservation({
+      retailer: "walmart",
+      store: { label: "East Windsor Supercenter" },
+    });
+    expect(PriceObservation.safeParse(ok).success).toBe(true);
+  });
+
+  it("rejects an empty store object", () => {
+    expect(StoreRef.safeParse({}).success).toBe(false);
+  });
+
+  it("dropped the values no extension can observe (1.0.0)", () => {
+    expect(Fulfillment.safeParse("in_store").success).toBe(false);
+    expect(Surface.safeParse("app").success).toBe(false);
+    expect(Retailer.safeParse("amazon").success).toBe(false);
+    expect(Retailer.options).toEqual(["instacart", "target", "walmart"]);
   });
 });
 

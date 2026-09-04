@@ -2,11 +2,16 @@
  * The `.meta.json` sidecar every committed fixture carries. Filled by hand from
  * `fixtures/raw/CAPTURE-LOG.md`; validated by `--check` and by the gate test.
  */
+import { Fulfillment, Retailer } from "@pennypincher/schema";
 import { z } from "zod";
 
-/** Vocabulary mirrors packages/schema so S05 can compare an extracted observation directly. */
-export const FixtureRetailer = z.enum(["instacart", "target", "walmart"]);
-export const FixtureFulfillment = z.enum(["delivery", "pickup", "in_store", "ship"]);
+/**
+ * Vocabulary comes from packages/schema so S05 can compare an extracted observation directly
+ * and a schema change cannot silently drift from what the sidecars accept. Session state is
+ * narrower than the schema's on purpose: a recorded fixture is never "unknown".
+ */
+export const FixtureRetailer = Retailer;
+export const FixtureFulfillment = Fulfillment;
 export const FixtureSessionState = z.enum(["logged_in", "logged_out"]);
 
 export const FixtureMeta = z
@@ -55,7 +60,7 @@ export function metaTemplate(retailer: string, slug: string): Record<string, unk
   return {
     retailer,
     capturedAt: "TODO ISO-8601, from fixtures/raw/CAPTURE-LOG.md",
-    fulfillment: "TODO delivery|pickup|in_store|ship",
+    fulfillment: `TODO ${Fulfillment.options.join("|")}`,
     sessionState: slug.endsWith("-logged-out") ? "logged_out" : "logged_in",
     zip3: "TODO",
     store: { retailerStoreId: "TODO", label: "TODO city or store name" },

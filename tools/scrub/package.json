@@ -10,6 +10,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@pennypincher/schema": "workspace:*",
     "parse5": "7.2.1",
     "zod": "3.24.1"
   },

@@ -1,0 +1,25 @@
+# deps / build
+node_modules/
+dist/
+.output/
+.wxt/
+.turbo/
+coverage/
+*.tsbuildinfo
+
+# env & secrets — never commit
+.env
+.env.*
+!.env.example
+.dev.vars
+.wrangler/
+
+# local tooling
+.claude/worktrees/
+.claude/settings.local.json
+.DS_Store
+Thumbs.db
+*.log
+
+# recorded retailer fixtures are committed ONLY after scrubbing (see docs/sessions/S02)
+fixtures/raw/

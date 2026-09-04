@@ -1,0 +1,26 @@
+{
+  "name": "pennypincher",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Consumer price-transparency platform: a consented panel that observes retailers' price experiments and shows shoppers the real price distribution.",
+  "packageManager": "pnpm@9.15.9",
+  "engines": {
+    "node": ">=22",
+    "pnpm": ">=9"
+  },
+  "scripts": {
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "guard": "bash scripts/check-escape-hatches.sh && bash scripts/check-forbidden-api.sh",
+    "gate": "pnpm lint && pnpm typecheck && pnpm test && pnpm guard",
+    "build": "pnpm -r --if-present build"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "1.9.4",
+    "typescript": "5.7.3",
+    "vitest": "3.0.5"
+  }
+}

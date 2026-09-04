@@ -1,0 +1,15 @@
+# Human-owned paths. These four map to the four ways the project goes badly wrong:
+# a broken data contract, a legally exposed capture mechanism, an unsubstantiated savings claim,
+# and a compromised gate.
+#
+# NOTE: GitHub only ENFORCES CODEOWNERS with branch protection, which needs GitHub Pro for
+# private repos. Until then this file is informational, and CLAUDE.md rules + the boundary-guard
+# CI step are the actual controls. Agents must still treat these paths as "ask first".
+
+/.github/                          @Skeaks
+/packages/schema/                  @Skeaks
+/apps/extension/src/capture/       @Skeaks
+/apps/**/copy/                     @Skeaks
+/docs/compliance/                  @Skeaks
+/scripts/check-forbidden-api.sh    @Skeaks
+**/__golden__/                     @Skeaks

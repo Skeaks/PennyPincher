@@ -1,0 +1,70 @@
+# The gate. Runs on every PR and on main. Budget: < 2 minutes wall-clock.
+#
+# Anything slower than that (mutation testing, CodeQL, E2E against recorded fixtures) belongs in
+# nightly.yml, NOT here. A slow PR gate is how the last project's deploy loop became 40 minutes.
+#
+# Agents cannot edit this file: see .github/CODEOWNERS and CLAUDE.md rule 4.
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # boundary-guard needs the base ref
+
+      - name: boundary-guard
+        # A PR that changes the gate AND the code it gates is rejected outright.
+        if: github.event_name == 'pull_request'
+        run: |
+          CHANGED=$(git diff --name-only "origin/${{ github.base_ref }}"...HEAD)
+          echo "$CHANGED"
+          if echo "$CHANGED" | grep -qE '^\.github/' && echo "$CHANGED" | grep -qE '^(apps|packages)/'; then
+            echo "::error::boundary-guard: a PR may change .github/ OR apps|packages, never both."
+            exit 1
+          fi
+
+      - name: no-escape-hatches
+        run: bash scripts/check-escape-hatches.sh
+
+      - name: forbidden-api
+        run: bash scripts/check-forbidden-api.sh
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: lint
+        run: pnpm lint
+
+      - name: typecheck
+        run: pnpm typecheck
+
+      - name: test
+        run: pnpm test
+
+      - name: secret-scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

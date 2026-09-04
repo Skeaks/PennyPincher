@@ -4,8 +4,8 @@ Ingest API: Hono on Cloudflare Workers with D1. Brief: `docs/sessions/S07-api-in
 
 | Route | Result |
 |---|---|
-| `GET /healthz` | `200 { ok: true, schemaVersion }` |
-| `POST /v1/observations` | body `ObservationBatch`; `201 { accepted, duplicates }` or `400 { errors: string[] }` |
+| `GET /healthz` | `200 { ok: true, schemaVersion, build }` (`build` is the git SHA the deploy job injected, `"dev"` locally) |
+| `POST /v1/observations` | `Authorization: Bearer <PILOT_TOKEN>` (open when the secret is unset, i.e. local dev); body `ObservationBatch`; `201 { accepted, duplicates }`, `400 { errors: string[] }`, or `401` |
 
 `observationId` is the primary key. Resending a batch is safe: ids that already exist are
 counted as `duplicates`, never rejected.

@@ -24,6 +24,6 @@
     "formatter": { "quoteStyle": "double", "semicolons": "always" }
   },
   "files": {
-    "ignore": ["node_modules", "dist", ".output", ".wxt", "coverage", "docs/**/*.md"]
+    "ignore": ["node_modules", "dist", ".output", ".wxt", ".wrangler", "coverage", "docs/**/*.md"]
   }
 }

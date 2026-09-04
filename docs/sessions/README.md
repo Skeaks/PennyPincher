@@ -16,9 +16,9 @@ and do that session."*
 | [S02](S02-fixture-recorder.md) | Fixture recorder + first snapshots | Capture | S00 | `tools/scrub`, 12 scrubbed Instacart/Target/Walmart pages in `fixtures/`. **Done 2026-09-04.** |
 | [S03](S03-schema-v1-and-synth.md) | Schema 1.0.0 + synthetic ladders | Schema, Stats | S02 | Schema 1.0.0 revised against real pages; `packages/synth`. **Done 2026-09-04.** |
 | [S04](S04-extension-skeleton.md) | Extension skeleton + consent | Capture | S00 | WXT MV3 app, consent gate, options page, local store, no network. **Done 2026-09-04.** |
-| [S05](S05-instacart-adapter.md) | Adapter interface + Instacart adapter | Capture | S02, S03, S04 | Passive capture producing valid observations, tested on fixtures |
+| [S05](S05-instacart-adapter.md) | Adapter interface + Instacart adapter | Capture | S02, S03, S04 | Passive capture producing valid observations, tested on fixtures. **Done 2026-09-04.** |
 | [S06](S06-lever-probe.md) | Lever probe v1 | Capture | S05 | "Your price vs anonymous price" in the popup. **Decision data starts here.** |
-| [S07](S07-api-ingest.md) | Ingest API | Ingest | S03 | Hono Worker + D1, validation, idempotency, PII guard |
+| [S07](S07-api-ingest.md) | Ingest API | Ingest | S03 | Hono Worker + D1, validation, idempotency, PII guard. **Done 2026-09-04.** |
 | [S08](S08-deploy-loop.md) | Deploy loop | Platform | S07 | `deploy.yml`, staging + prod, rollback; the 1 to 5 minute number measured |
 | [S09](S09-stats-resolve.md) | Tier resolution + confidence + UNRESOLVED | Stats | S03 | `packages/stats` core, tested on synth ground truth |
 | [S10](S10-stats-hardening.md) | Stats hardening | Stats | S09 | Property tests, nightly mutation score, change-point stub |

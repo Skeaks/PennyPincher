@@ -1,23 +1,11 @@
 /**
- * Pins the S04 posture: the manifest asks for exactly the permissions the brief allows, and no
- * source file in the extension can reach the network. These are legal constraints
- * (docs/decisions/0003-capture-posture.md), so they are tests, not conventions.
+ * Pins the manifest posture (S04): it asks for exactly the permissions the brief allows. The
+ * network posture moved to test/probe/posture.test.ts in S06, when the lever probe became the
+ * one file allowed to fetch (docs/decisions/0003-capture-posture.md, line 2). These are legal
+ * constraints, so they are tests, not conventions.
  */
-import { readFileSync, readdirSync, statSync } from "node:fs";
-import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
 import { HOST_PERMISSIONS, PERMISSIONS, manifest } from "../src/manifest";
-
-const SRC = join(__dirname, "..", "src");
-
-function walk(dir: string): string[] {
-  return readdirSync(dir).flatMap((name) => {
-    const full = join(dir, name);
-    return statSync(full).isDirectory() ? walk(full) : [full];
-  });
-}
-
-const SOURCE_FILES = walk(SRC).filter((f) => /\.(ts|tsx|js|mjs|html)$/.test(f));
 
 describe("manifest", () => {
   it("requests exactly storage and alarms", () => {
@@ -44,28 +32,4 @@ describe("manifest", () => {
   it("declares no content scripts in the manifest object (WXT registers them from src/entrypoints/*.content.ts)", () => {
     expect("content_scripts" in manifest).toBe(false);
   });
-});
-
-describe("no network", () => {
-  it("scans a non-empty source tree", () => {
-    expect(SOURCE_FILES.length).toBeGreaterThan(5);
-  });
-
-  const NETWORK = [
-    /\bfetch\s*\(/,
-    /\bXMLHttpRequest\b/,
-    /\bWebSocket\b/,
-    /\bEventSource\b/,
-    /\bsendBeacon\b/,
-    /\bimportScripts\s*\(/,
-  ];
-
-  for (const file of SOURCE_FILES) {
-    it(`${relative(SRC, file).replace(/\\/g, "/")} makes no network call`, () => {
-      const text = readFileSync(file, "utf8");
-      for (const pattern of NETWORK) {
-        expect(text).not.toMatch(pattern);
-      }
-    });
-  }
 });

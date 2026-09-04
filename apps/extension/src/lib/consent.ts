@@ -2,12 +2,14 @@
  * Consent state. Nothing in the extension may observe, store, or (in later sessions) send
  * anything until `hasConsent()` is true. See docs/decisions/0003-capture-posture.md, "Consent".
  *
- * Bump CONSENT_VERSION whenever the set of collected fields changes. A stored consent whose
+ * Bump CONSENT_VERSION whenever the set of collected fields or the network behaviour the copy
+ * describes changes. A stored consent whose
  * version differs from the current one is treated as absent, so the user is re-prompted.
  */
 import { browser } from "wxt/browser";
 
-export const CONSENT_VERSION = 1;
+/** 2 (S06): the consent copy now describes the anonymous logged-out page request. */
+export const CONSENT_VERSION = 2;
 export const CONSENT_KEY = "pp:consent";
 
 export interface ConsentRecord {

@@ -1,7 +1,7 @@
 import { SCHEMA_VERSION } from "@pennypincher/schema";
 import { beforeEach, describe, expect, it } from "vitest";
 import { fakeBrowser } from "wxt/testing/fake-browser";
-import { acceptConsent } from "../src/lib/consent";
+import { CONSENT_VERSION, acceptConsent } from "../src/lib/consent";
 import {
   InvalidObservationError,
   MAX_ROWS,
@@ -112,7 +112,7 @@ describe("clear and export", () => {
     expect(file).toEqual({
       exportedAt: now.toISOString(),
       schemaVersion: SCHEMA_VERSION,
-      consent: { version: 1, acceptedAt: "2026-09-04T10:00:00.000Z" },
+      consent: { version: CONSENT_VERSION, acceptedAt: "2026-09-04T10:00:00.000Z" },
       observations: [validObservation()],
     });
     // Round-trips through JSON unchanged: what the user downloads is what is stored.

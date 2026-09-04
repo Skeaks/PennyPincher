@@ -25,7 +25,8 @@ export const CONSENT_COPY = {
   ],
   howItWorks: [
     "The extension only reads what your browser already drew on the page. It never signs in, clicks, searches, or navigates for you.",
-    "For now everything stays on this computer. This version of the extension makes no network requests of any kind.",
+    "To check whether being signed in changes your price, the extension asks the retailer for the public page of the product you are viewing, the way a visitor who is not signed in would see it: without your cookies, sign-in, or any credentials. It does this at most once per product per hour, and if the retailer tries to send that request somewhere else it stops rather than follow.",
+    "Everything stays on this computer. That page request is the only network request this version makes, and it carries nothing about you.",
   ],
   deleteEverything:
     'You can delete everything at any time. The extension\'s options page has a "Delete my data" ' +

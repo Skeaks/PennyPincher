@@ -8,7 +8,8 @@ lock, or release script (ADR 0004). The extension is not deployed by this workfl
 ## What is live?
 
 ```bash
-curl -s https://pennypincher-api.<account-subdomain>.workers.dev/healthz
+curl -s https://pennypincher-api.jamesjlee04.workers.dev/healthz          # production
+curl -s https://pennypincher-api-staging.jamesjlee04.workers.dev/healthz  # staging
 ```
 
 `build` is the full git SHA of the commit that was deployed. Compare with `git log -1 origin/main`.
@@ -18,8 +19,8 @@ The exact URLs are printed in each deploy run's summary (Actions > deploy > run 
 
 | When | Target | Trigger | Measured | Run |
 |---|---|---|---|---|
-| TBD | staging | PR label `deploy-staging` | TBD (job start to live) | TBD |
-| TBD | production | merge to `main` | TBD (merge commit timestamp to live) | TBD |
+| 2026-09-04 21:12 UTC | staging | PR label `deploy-staging` on #21 | 54 s job start to live (59 s run wall-clock; 24 s of that was waiting for the edge to serve the new build) | [33920012104](https://github.com/Skeaks/PennyPincher/actions/runs/33920012104) |
+| TBD | production | merge to `main` | TBD: the merge of #21 is the first production deploy; read the number off that run's summary and fill it in | |
 
 Target from `CONTRIBUTING.md`: under 5 minutes. The verify step in `deploy.yml` prints the
 number in the job summary on every run, so this table can be refreshed from any later deploy.

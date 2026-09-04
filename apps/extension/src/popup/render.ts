@@ -29,6 +29,17 @@ export function viewElement(view: PopupView): HTMLElement {
       return el("p", { class: "muted", text: "Open a product page on a supported retailer." });
     case "no_observation":
       return el("p", { class: "muted", text: "No price recorded for this page yet." });
+    case "not_signed_in":
+      return el("div", {}, [
+        el("dl", {}, [
+          ...priceRow("Your price", view.mine),
+          ...priceRow("Anonymous price", undefined),
+        ]),
+        el("p", {
+          class: "muted",
+          text: "Nothing to compare: this price was recorded while you were not signed in.",
+        }),
+      ]);
     case "pending":
       return el("div", {}, [
         el("dl", {}, [

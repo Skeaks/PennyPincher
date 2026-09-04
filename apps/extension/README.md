@@ -1,7 +1,9 @@
 # PennyPincher extension
 
-MV3 extension built with [WXT](https://wxt.dev). Session S04 skeleton: consent gate, local
-observation store, options page. No capture yet (S05), no network at all (S07/S11).
+MV3 extension built with [WXT](https://wxt.dev). Consent gate, local observation store, options
+page (S04); passive capture with the Instacart adapter (S05); the lever probe (S06), which makes
+the extension's only network request: the public page of the product being viewed, fetched
+without credentials, once per product per hour. Upload arrives in S11.
 
 ```bash
 pnpm --filter extension build   # -> .output/chrome-mv3   (the manifest that ships)

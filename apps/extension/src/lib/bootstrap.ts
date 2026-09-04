@@ -1,7 +1,7 @@
 /**
  * What the background worker does on install, update, and browser start: nothing, except make
- * sure the user has seen the current consent screen. No capture, no alarms, no network until
- * consent exists (and capture itself does not exist until S05).
+ * sure the user has seen the current consent screen. Capture (S05) and the lever probe (S06)
+ * are wired separately and each checks consent before doing anything.
  */
 import { browser } from "wxt/browser";
 import { hasConsent } from "./consent";

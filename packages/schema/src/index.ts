@@ -195,3 +195,5 @@ export function parseObservationBatch(input: unknown): ParseResult {
   }
   return { ok: true, batch: result.data };
 }
+
+// S01 gate self-test: deliberate package edit in the same PR as a gate edit.

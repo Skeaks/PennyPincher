@@ -1,3 +1,4 @@
+# S01 gate self-test: deliberate gate edit in the same PR as package code.
 # The gate. Runs on every PR and on main. Budget: < 2 minutes wall-clock.
 #
 # Anything slower than that (mutation testing, CodeQL, E2E against recorded fixtures) belongs in

@@ -2,11 +2,10 @@
 # correctly (CONTRIBUTING.md). Secrets (the pilot bearer token, S08) are set with
 # `wrangler secret put` and never appear in this file.
 #
-# database_id for staging and production are placeholders until the D1 databases exist:
-#   wrangler d1 create pennypincher-staging
-#   wrangler d1 create pennypincher-production
-# then paste the ids below (S08). Local `wrangler dev` runs D1 in-process under .wrangler/
-# (gitignored) and never contacts Cloudflare, so the top-level id is only a label.
+# The staging and production database_id values are the D1 identifiers Jamie created in the
+# Cloudflare dashboard. They are identifiers, not secrets. Local `wrangler dev` runs D1
+# in-process under .wrangler/ (gitignored) and never contacts Cloudflare, so the top-level id
+# is only a label.
 
 name = "pennypincher-api"
 main = "src/index.ts"
@@ -28,7 +27,7 @@ name = "pennypincher-api-staging"
 [[env.staging.d1_databases]]
 binding = "DB"
 database_name = "pennypincher-staging"
-database_id = "00000000-0000-0000-0000-000000000000"
+database_id = "437f30bb-1491-432e-9c70-f8384f598963"
 migrations_dir = "migrations"
 
 [env.production]
@@ -37,5 +36,5 @@ name = "pennypincher-api"
 [[env.production.d1_databases]]
 binding = "DB"
 database_name = "pennypincher-production"
-database_id = "00000000-0000-0000-0000-000000000000"
+database_id = "93e9cd66-02be-433b-b77d-5dabca1069ec"
 migrations_dir = "migrations"

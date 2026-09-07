@@ -1,6 +1,7 @@
 import { SCHEMA_VERSION, parseObservationBatch } from "@pennypincher/schema";
 import { type Context, Hono } from "hono";
 import { type ObservationRepo, toRow } from "./repo/observations";
+import { type AdapterHealthRepo, registerAdapterHealthRoutes } from "./routes/adapter-health";
 import { type CellCache, registerCellsRoute } from "./routes/cells";
 
 export interface AppDeps<E> {
@@ -23,6 +24,11 @@ export interface AppDeps<E> {
    * unless the test is about caching.
    */
   cache?: (env: E) => CellCache | undefined;
+  /**
+   * Storage for the adapter health beacon (S12). D1 in the Worker; a memory repo in tests.
+   * Omitted means the `/v1/adapter-health` routes are not mounted (404).
+   */
+  adapterHealth?: (env: E) => AdapterHealthRepo;
 }
 
 /**
@@ -33,6 +39,8 @@ export interface AppDeps<E> {
  *   POST /v1/observations    -> 201 { accepted, duplicates } | 400 { errors: string[] }
  *                               | 401 { errors: ["unauthorized"] } when the bearer is wrong
  *   GET  /v1/cells/:cellKey  -> 200 CellResponse (see routes/cells.ts) | 400 | 401
+ *   POST /v1/adapter-health  -> 201 { stored } | 400 | 401 (see routes/adapter-health.ts)
+ *   GET  /v1/adapter-health  -> 200 AdapterHealthSummary[] | 401
  */
 export function createApp<E extends object>(deps: AppDeps<E>) {
   const now = deps.now ?? (() => new Date());
@@ -78,6 +86,10 @@ export function createApp<E extends object>(deps: AppDeps<E>) {
     denied,
     ...(deps.cache ? { cache: deps.cache } : {}),
   });
+
+  if (deps.adapterHealth) {
+    registerAdapterHealthRoutes(app, { repo: deps.adapterHealth, now, denied });
+  }
 
   app.notFound((c) => c.json({ errors: ["not found"] }, 404));
 

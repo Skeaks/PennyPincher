@@ -1,11 +1,16 @@
 /**
- * The extension's requests to PennyPincher's own API (S11), and the only place that makes
- * them: the observation upload and the cell (ladder) query. Both go to the configured API
- * origin only, with the pilot bearer, `credentials: "omit"` (no cookies, ever: ADR 0003), no
- * cache, and redirects refused. This is first-party traffic; the retailer-facing posture is the
- * probe's (`src/probe/fetch.ts`) and is unchanged.
+ * The extension's requests to PennyPincher's own API (S11, S12), and the only place that
+ * makes them: the observation upload, the adapter health beacon (S12) and the cell (ladder)
+ * query. All go to the configured API origin only, with the pilot bearer,
+ * `credentials: "omit"` (no cookies, ever: ADR 0003), no cache, and redirects refused. This
+ * is first-party traffic; the retailer-facing posture is the probe's (`src/probe/fetch.ts`)
+ * and is unchanged.
+ *
+ * Two `fetch` call sites, pinned by test/probe/posture.test.ts: one POST helper shared by the
+ * upload and the beacon, and the GET for the cell. A new endpoint reuses one of them.
  */
 import type { PriceObservation } from "@pennypincher/schema";
+import type { AdapterHealthReport } from "../capture/health";
 import type { SyncConfig } from "./config";
 
 export const SYNC_FETCH_INIT = {
@@ -47,6 +52,11 @@ export interface CellSummary {
   summary: string;
   updatedAt: string;
 }
+
+/** What `POST /v1/adapter-health` answers with. */
+export type HealthPostResult =
+  | { ok: true }
+  | { ok: false; reason: "http_error" | "network_error"; status?: number };
 
 export type CellFetch =
   | { ok: true; cell: CellSummary }
@@ -112,19 +122,38 @@ function headers(config: SyncConfig, json: boolean): Record<string, string> {
   return h;
 }
 
+/** POST a JSON body to one of the API's `/v1` paths. The one POST call site; may throw. */
+async function postJson(config: SyncConfig, path: string, body: unknown): Promise<ResponseLike> {
+  return fetch(`${config.apiBaseUrl}${path}`, {
+    ...SYNC_FETCH_INIT,
+    method: "POST",
+    headers: headers(config, true),
+    body: JSON.stringify(body),
+  });
+}
+
 /** Upload one batch (at most 200 rows, the API's limit). Never throws. */
 export async function postObservations(
   config: SyncConfig,
   observations: readonly PriceObservation[],
 ): Promise<UploadResult> {
   try {
-    const response = await fetch(`${config.apiBaseUrl}/v1/observations`, {
-      ...SYNC_FETCH_INIT,
-      method: "POST",
-      headers: headers(config, true),
-      body: JSON.stringify({ observations }),
-    });
+    const response = await postJson(config, "/v1/observations", { observations });
     return await classifyUpload(response);
+  } catch {
+    return { ok: false, reason: "network_error" };
+  }
+}
+
+/** Upload one day's adapter health counts (S12). Never throws. */
+export async function postAdapterHealth(
+  config: SyncConfig,
+  report: AdapterHealthReport,
+): Promise<HealthPostResult> {
+  try {
+    const response = await postJson(config, "/v1/adapter-health", report);
+    if (!response.ok) return { ok: false, reason: "http_error", status: response.status };
+    return { ok: true };
   } catch {
     return { ok: false, reason: "network_error" };
   }

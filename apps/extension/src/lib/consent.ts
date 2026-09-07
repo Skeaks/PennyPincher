@@ -14,8 +14,11 @@ import { browser } from "wxt/browser";
  * not only product pages.
  * 4 (S11): the copy says the records are uploaded to PennyPincher's own server every
  * 15 minutes and that the popup asks that server for the product's price ladder.
+ * 5 (S14): the copy says "Delete my data" asks that server to remove the records sent under
+ * this browser's IDs (a third request to it), that the ID rotates every 7 days, and that the
+ * server keeps a record for 90 days.
  */
-export const CONSENT_VERSION = 4;
+export const CONSENT_VERSION = 5;
 export const CONSENT_KEY = "pp:consent";
 
 export interface ConsentRecord {

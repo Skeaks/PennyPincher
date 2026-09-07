@@ -207,7 +207,10 @@ export async function clearHealthState(): Promise<void> {
 }
 
 /**
- * Count one capture outcome. Writers are serialised so two pages cannot lose a count. Never
+ * Count one capture outcome. Writers are serialised within this realm (one content script,
+ * or the background); two tabs counting at the same instant can still lose one, because the
+ * get-then-set on `chrome.storage.local` is not atomic across realms. Telemetry, so accepted
+ * (review of PR #34); making the background the single writer is the follow-up. Never
  * throws: a storage failure is not capture's problem.
  */
 export function recordCaptureOutcome(
@@ -329,7 +332,13 @@ export async function runHealthUpload(
   return { status: "uploaded", report };
 }
 
-/** Background wiring: a daily alarm runs the upload. Registered synchronously, like the sync. */
+/**
+ * Background wiring: a daily alarm runs the upload. The listener is registered synchronously,
+ * like the sync's. The alarm is created only when it does not already exist: `alarms.create`
+ * with an existing name replaces it and restarts the countdown, and the MV3 worker restarts
+ * many times a day (the 15-minute sync alarm, every content-script message), so an
+ * unconditional create would push a 24-hour alarm forward forever and it would never fire.
+ */
 export function registerHealthBeacon(
   deps: HealthUploadDeps = defaultHealthDeps(),
   onOutcome: (outcome: HealthUploadOutcome) => void = () => {},
@@ -338,5 +347,16 @@ export function registerHealthBeacon(
     if (alarm.name !== HEALTH_ALARM) return;
     void runHealthUpload(deps).then(onOutcome, () => undefined);
   });
-  void browser.alarms.create(HEALTH_ALARM, { periodInMinutes: HEALTH_PERIOD_MINUTES });
+  void ensureHealthAlarm();
+}
+
+/** Create the daily alarm unless one is already scheduled. Never throws. */
+export async function ensureHealthAlarm(): Promise<void> {
+  try {
+    const existing = await browser.alarms.get(HEALTH_ALARM);
+    if (existing) return;
+    await browser.alarms.create(HEALTH_ALARM, { periodInMinutes: HEALTH_PERIOD_MINUTES });
+  } catch {
+    // No alarms API (a test without the fake browser): the beacon simply stays off.
+  }
 }

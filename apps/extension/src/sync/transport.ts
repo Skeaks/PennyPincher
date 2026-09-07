@@ -6,8 +6,9 @@
  * is first-party traffic; the retailer-facing posture is the probe's (`src/probe/fetch.ts`)
  * and is unchanged.
  *
- * Two `fetch` call sites, pinned by test/probe/posture.test.ts: one POST helper shared by the
- * upload and the beacon, and the GET for the cell. A new endpoint reuses one of them.
+ * Three `fetch` call sites, pinned by test/probe/posture.test.ts: one POST helper shared by
+ * the upload and the beacon, the GET for the cell, and the DELETE for a panelist (S14). A new
+ * POST reuses the helper.
  */
 import type { PriceObservation } from "@pennypincher/schema";
 import type { AdapterHealthReport } from "../capture/health";
@@ -22,6 +23,11 @@ export const SYNC_FETCH_INIT = {
 /** What `POST /v1/observations` answers with. */
 export type UploadResult =
   | { ok: true; accepted: number; duplicates: number }
+  | { ok: false; reason: "http_error" | "network_error" | "bad_response"; status?: number };
+
+/** What `DELETE /v1/panelists/:id` answers with (S14). `deleted` is the rows removed. */
+export type DeleteResult =
+  | { ok: true; deleted: number }
   | { ok: false; reason: "http_error" | "network_error" | "bad_response"; status?: number };
 
 /** The slice of the API's cell response the popup reads (apps/api/src/routes/cells.ts). */
@@ -154,6 +160,43 @@ export async function postAdapterHealth(
     const response = await postJson(config, "/v1/adapter-health", report);
     if (!response.ok) return { ok: false, reason: "http_error", status: response.status };
     return { ok: true };
+  } catch {
+    return { ok: false, reason: "network_error" };
+  }
+}
+
+function isDeleteBody(value: unknown): value is { deleted: number } {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    typeof (value as { deleted: unknown }).deleted === "number"
+  );
+}
+
+export async function classifyDelete(response: ResponseLike): Promise<DeleteResult> {
+  if (!response.ok) return { ok: false, reason: "http_error", status: response.status };
+  try {
+    const body = await response.json();
+    if (!isDeleteBody(body)) return { ok: false, reason: "bad_response", status: response.status };
+    return { ok: true, deleted: body.deleted };
+  } catch {
+    return { ok: false, reason: "bad_response", status: response.status };
+  }
+}
+
+/** Remove everything the server holds under one panelist id (S14). Never throws. */
+export async function deletePanelist(
+  config: SyncConfig,
+  panelistId: string,
+): Promise<DeleteResult> {
+  const id = encodeURIComponent(panelistId);
+  try {
+    const response = await fetch(`${config.apiBaseUrl}/v1/panelists/${id}`, {
+      ...SYNC_FETCH_INIT,
+      method: "DELETE",
+      headers: headers(config, false),
+    });
+    return await classifyDelete(response);
   } catch {
     return { ok: false, reason: "network_error" };
   }

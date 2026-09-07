@@ -345,9 +345,12 @@ describe("registerHealthBeacon", () => {
     };
   }
 
-  async function settled(predicate: () => boolean, timeoutMs = 2000): Promise<void> {
+  async function settled(
+    predicate: () => boolean | Promise<boolean>,
+    timeoutMs = 2000,
+  ): Promise<void> {
     const deadline = Date.now() + timeoutMs;
-    while (!predicate()) {
+    while (!(await predicate())) {
       if (Date.now() > deadline) throw new Error("timed out");
       await new Promise((r) => setTimeout(r, 5));
     }
@@ -368,9 +371,26 @@ describe("registerHealthBeacon", () => {
 
   it("creates the daily alarm", async () => {
     registerHealthBeacon(deps());
+    await settled(async () => (await fakeBrowser.alarms.get(HEALTH_ALARM)) !== undefined);
     const a = await fakeBrowser.alarms.get(HEALTH_ALARM);
     expect(a?.periodInMinutes).toBe(HEALTH_PERIOD_MINUTES);
     expect(HEALTH_PERIOD_MINUTES).toBe(24 * 60);
+  });
+
+  it("keeps an alarm that already exists: a worker restart must not push the countdown forward", async () => {
+    const earlier = T0.getTime() + 60_000;
+    await fakeBrowser.alarms.create(HEALTH_ALARM, {
+      when: earlier,
+      periodInMinutes: HEALTH_PERIOD_MINUTES,
+    });
+    registerHealthBeacon(deps());
+    registerHealthBeacon(deps());
+    await new Promise((r) => setTimeout(r, 20));
+    const a = await fakeBrowser.alarms.get(HEALTH_ALARM);
+    expect(a?.scheduledTime).toBe(earlier);
+    expect((await fakeBrowser.alarms.getAll()).filter((x) => x.name === HEALTH_ALARM)).toHaveLength(
+      1,
+    );
   });
 
   it("uploads when the alarm fires, through the real storage, and resets", async () => {

@@ -1,0 +1,106 @@
+# Merge is deploy (ADR 0004). Nothing here re-runs the gate: ci.yml already ran on the PR.
+#
+#   push to main touching apps/api/** or packages/**  -> production
+#   PR labeled `deploy-staging` (and every push to it) -> staging
+#   workflow_dispatch                                   -> either, by hand
+#
+# One job, three steps that matter: apply D1 migrations (idempotent: D1 tracks what ran),
+# `wrangler deploy` (atomic: the whole Worker is replaced), then poll /healthz until it reports
+# this commit's SHA and print the measured time. Rollback is `wrangler rollback` or revert +
+# merge; see docs/deploy.md. Secrets are CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID (repo
+# secrets, set by Jamie); PILOT_TOKEN lives in Cloudflare only.
+#
+# Agents cannot edit this file alongside app code: see CLAUDE.md rule 4.
+name: deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/api/**"
+      - "packages/**"
+      - ".github/workflows/deploy.yml"
+  pull_request:
+    types: [labeled, synchronize]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Worker environment"
+        type: choice
+        options: [staging, production]
+        default: staging
+
+# One deploy at a time per target; never cancel a deploy that has started.
+concurrency:
+  group: deploy-${{ github.event_name == 'pull_request' && format('staging-pr-{0}', github.event.pull_request.number) || (github.event_name == 'workflow_dispatch' && inputs.environment || 'production') }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    # PR events only count when the deploy-staging label is the trigger or is already present.
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.label.name == 'deploy-staging' ||
+      contains(github.event.pull_request.labels.*.name, 'deploy-staging')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      TARGET: ${{ github.event_name == 'pull_request' && 'staging' || (github.event_name == 'workflow_dispatch' && inputs.environment || 'production') }}
+      # For a PR the deployed code is the PR head, not the synthetic merge commit checkout gives us.
+      BUILD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: apply D1 migrations
+        working-directory: apps/api
+        run: pnpm exec wrangler d1 migrations apply DB --env "$TARGET" --remote
+
+      - name: wrangler deploy
+        id: deploy
+        working-directory: apps/api
+        run: |
+          pnpm exec wrangler deploy --env "$TARGET" --var "BUILD_SHA:$BUILD_SHA" | tee deploy.log
+          URL=$(grep -oE 'https://[a-z0-9.-]+\.workers\.dev' deploy.log | head -n1)
+          if [ -z "$URL" ]; then echo "::error::could not find the workers.dev URL in wrangler output"; exit 1; fi
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+
+      - name: verify /healthz reports this build
+        env:
+          URL: ${{ steps.deploy.outputs.url }}
+          # Push: the merge commit's timestamp is "merge clicked". Otherwise measure from job start.
+          START: ${{ github.event_name == 'push' && github.event.head_commit.timestamp || '' }}
+        run: |
+          start=$(date -u -d "${START:-now}" +%s)
+          for i in $(seq 1 60); do
+            body=$(curl -sS --max-time 10 "$URL/healthz" || true)
+            if echo "$body" | grep -q "\"build\":\"$BUILD_SHA\""; then
+              elapsed=$(( $(date -u +%s) - start ))
+              echo "live: $body"
+              {
+                echo "### deploy: $TARGET"
+                echo "- URL: $URL/healthz"
+                echo "- build: \`$BUILD_SHA\`"
+                echo "- ${START:+merge to live}${START:-job start to live}: **${elapsed}s**"
+              } >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "::error::$URL/healthz never reported build $BUILD_SHA (last: $body)"
+          exit 1

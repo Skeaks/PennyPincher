@@ -21,6 +21,7 @@ and do that session."*
 | [S07](S07-api-ingest.md) | Ingest API | Ingest | S03 | Hono Worker + D1, validation, idempotency, PII guard. **Done 2026-09-04.** |
 | [S08](S08-deploy-loop.md) | Deploy loop | Platform | S07 | `deploy.yml`, staging + prod, rollback; the 1 to 5 minute number measured. **Done 2026-09-04 (#21); first production deploy is that merge.** |
 | [S09](S09-stats-resolve.md) | Tier resolution + confidence + UNRESOLVED | Stats | S03 | `packages/stats` core, tested on synth ground truth |
+| [S17](S17-instacart-surfaces.md) | Instacart surfaces: modal, tiles, anonymous HTML | Capture | S06 | Adapter reads the product modal, search tiles and the probe's raw HTML (JSON-LD). **Run next to S09: without it real shopping records almost nothing.** |
 | [S10](S10-stats-hardening.md) | Stats hardening | Stats | S09 | Property tests, nightly mutation score, change-point stub |
 | [S11](S11-query-api-and-ladder-ui.md) | Query API + ladder popup | Ingest, Capture | S07, S09 | Cell query endpoint; ladder + UNRESOLVED + contribution counter in popup |
 | [S12](S12-adapters-target-walmart.md) | Adapters 2 and 3 + health beacon | Capture | S05 | Target, Walmart adapters; per-adapter parse success telemetry |

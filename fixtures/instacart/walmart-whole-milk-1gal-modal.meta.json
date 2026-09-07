@@ -1,0 +1,21 @@
+{
+  "retailer": "instacart",
+  "capturedAt": "2026-09-07T16:34:10Z",
+  "fulfillment": "delivery",
+  "sessionState": "logged_in",
+  "zip3": "191",
+  "store": {
+    "retailerStoreId": "151190",
+    "label": "Walmart"
+  },
+  "expected": {
+    "price": {
+      "amountMinor": 495,
+      "currency": "USD"
+    },
+    "priceText": "$4.95",
+    "title": "Great Value Whole Vitamin D Milk",
+    "retailerSku": "20654983"
+  },
+  "notes": "The product modal (S17), open over the cross-retailer search for Milk after clicking the Walmart tile; URL /products/20654983-great-value-milk-vitamin-d-whole-1-gl?retailerSlug=walmart. The overlay is div[aria-modal=true][aria-label=\"item details\"] (role and hidden attributes are scrubbed) containing #item_details with a Back button; the title is an h2, not an h1; the price is the \"Current price: $4.95\" screen-reader span; a selections_container lists the 0.5 gal ($2.55) and 1 gal sizes. Store id from #item_details-items_151190-20654983-Details. The store label \"Walmart\" is rendered only in the search results' retailer row behind the modal (a[href=\"/store/walmart/s\"] span[aria-level=3]); the \"Shop all great value\" link also points at /store/walmart/s. No Delivery/Pickup control anywhere (fulfilment inferred). No JSON-LD on this surface. Served ZIP 19123 is in the hydration scripts only; the header has no ZIP prompt. Pair of walmart-search-milk.html (same session, one click later)."
+}

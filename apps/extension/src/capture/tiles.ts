@@ -26,7 +26,9 @@ function count(skipped: TileExtraction["skipped"], reason: ExtractFailureReason)
 
 /**
  * Read every tile. The same product can appear twice on a listing (a sponsored slot and the
- * organic one); the first rendering wins, so a page yields at most one row per SKU.
+ * organic one); the first rendering wins, so a page yields at most one row per product URL.
+ * The URL, not the SKU, because a cross-retailer search shows one product id under several
+ * stores and the URL carries the store.
  */
 export function collectTiles(doc: Document, reader: TileReader): TileExtraction {
   const out = emptyTileExtraction();
@@ -49,9 +51,9 @@ export function collectTiles(doc: Document, reader: TileReader): TileExtraction 
       count(out.skipped, result.reason);
       continue;
     }
-    const sku = result.observation.product.retailerSku;
-    if (seen.has(sku)) continue;
-    seen.add(sku);
+    const url = result.observation.product.url;
+    if (seen.has(url)) continue;
+    seen.add(url);
     out.observations.push(result.observation);
   }
   return out;

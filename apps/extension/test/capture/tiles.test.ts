@@ -1,8 +1,8 @@
 /**
- * Listing tiles (S17): the generic collector on a synthetic reader, and the Instacart tile
- * reader on the recommendation carousels of a recorded product page (the same tile markup
- * search and aisle pages use; no listing fixture has been recorded yet) plus synthetic tiles
- * for the Rollback / was-price shape the brief describes.
+ * Listing tiles (S17): the generic collector on a synthetic reader; the Instacart tile reader
+ * on the recorded cross-retailer search for Milk (fixtures/instacart/walmart-search-milk: four
+ * retailer rows, a Rollback tile) and on the recommendation carousels of a recorded product
+ * page (the same tile markup, with store ids); and synthetic tiles for the remaining shapes.
  */
 import { PriceObservation } from "@pennypincher/schema";
 import { describe, expect, it } from "vitest";
@@ -15,6 +15,9 @@ import { fragmentDocument, listFixtures, parseDocument } from "./dom";
 
 const bananas = listFixtures("instacart").find((f) => f.slug === "wegmans-bananas");
 if (!bananas) throw new Error("fixture wegmans-bananas missing");
+const milkSearch = listFixtures("instacart").find((f) => f.slug === "walmart-search-milk");
+if (!milkSearch) throw new Error("fixture walmart-search-milk missing");
+const URL_SEARCH = "https://www.instacart.com/store/s?k=Milk&search_id=9558e849#results";
 
 const URL_AISLE = "https://www.instacart.com/store/wegmans/collections/produce?page=2#top";
 const ctx: PageContext = { url: URL_AISLE, surface: "web", device: "desktop" };
@@ -84,6 +87,105 @@ describe("collectTiles", () => {
       read: () => ({ ok: false, reason: "no_price" }),
     });
     expect(out).toEqual({ observations: [], skipped: {} });
+  });
+});
+
+describe("instacart tiles on the recorded cross-retailer search for Milk", () => {
+  const doc = parseDocument(milkSearch.html, URL_SEARCH);
+  const out = extractTiles(doc, { url: URL_SEARCH, surface: "web", device: "desktop" });
+  const byLabel = (label: string) => out.observations.filter((o) => o.store?.label === label);
+
+  it("classifies the URL as a listing and reads the tiles in every retailer row", () => {
+    expect(instacartAdapter.pageKind(URL_SEARCH)).toBe("listing");
+    const rows = doc.querySelectorAll('[data-testid="CrossRetailerResultRowWrapper"]');
+    expect(rows.length).toBe(4);
+    expect(doc.querySelectorAll('[data-item-card="true"]').length).toBe(48);
+    expect(out.observations.length).toBe(42);
+    // Six tile links read `/products/[scrubbed]-…`: the scrubber treats a five-digit product
+    // id as a ZIP (docs/fixtures.md, known limits). Those tiles name no SKU.
+    expect(out.skipped).toEqual({ no_sku: 6 });
+    expect(doc.body.innerHTML).toContain('href="/products/[scrubbed]-');
+  });
+
+  it("gives every tile its row's store label, slug and fulfilment line", () => {
+    const labels = new Set(out.observations.map((o) => o.store?.label));
+    expect(labels).toEqual(new Set(["Walmart", "GIANT", "Stop & Shop", "ALDI"]));
+    for (const o of out.observations) {
+      expect(o.store?.retailerStoreId).toBeUndefined();
+      expect(o.context.fulfillmentInferred).toBeUndefined();
+      expect(o.context.sessionState).toBe("logged_in");
+      expect(o.facts.price.amountMinor).toBeGreaterThan(0);
+      expect(o.product.title.length).toBeGreaterThan(0);
+      expect(o.product.sizeText).toMatch(/^\d[\d.]* (?:fl oz|oz|gal|qt)$/);
+    }
+    for (const o of byLabel("Walmart")) {
+      expect(o.product.url).toMatch(/\?retailerSlug=walmart$/);
+      expect(o.context.fulfillment).toBe("delivery");
+    }
+    for (const o of byLabel("GIANT"))
+      expect(o.product.url).toMatch(/retailerSlug=giant-food-stores$/);
+    // Stop & Shop offers "Pickup available" only; the others "Delivery by …".
+    for (const o of byLabel("Stop & Shop")) expect(o.context.fulfillment).toBe("pickup");
+    for (const o of byLabel("ALDI")) expect(o.context.fulfillment).toBe("delivery");
+  });
+
+  it("reads the Rollback tile: price, struck-through was-price, both badges", () => {
+    const o = byLabel("Walmart").find((x) => x.product.retailerSku === "1343109");
+    expect(o).toMatchObject({
+      product: {
+        title: "fairlife Whole Ultra-Filtered Milk, Lactose Free",
+        sizeText: "52 fl oz",
+        url: "https://www.instacart.com/products/1343109-fairlife-whole-ultrafiltered-milk-lactose-free-52-fl-oz?retailerSlug=walmart",
+      },
+      facts: {
+        price: { amountMinor: 478, currency: "USD" },
+        priceText: "$4.78",
+        wasPrice: { amountMinor: 532, currency: "USD" },
+        promoTags: ["Rollback", "10% off"],
+        isEstimate: false,
+        memberPrice: false,
+      },
+      store: { label: "Walmart" },
+    });
+  });
+
+  it("reads the sidecar's tile (the milk the modal fixture opens) with its Best seller badge", () => {
+    const o = byLabel("Walmart").find(
+      (x) => x.product.retailerSku === milkSearch.meta.expected.retailerSku,
+    );
+    expect(o).toMatchObject({
+      product: { title: milkSearch.meta.expected.title, sizeText: "1 gal" },
+      facts: {
+        price: milkSearch.meta.expected.price,
+        priceText: milkSearch.meta.expected.priceText,
+        promoTags: ["Best seller"],
+      },
+    });
+    expect(o?.facts.wasPrice).toBeUndefined();
+  });
+
+  it("a Great price badge is a promo tag; ratings and counts never become the size", () => {
+    const o = byLabel("Walmart").find((x) => x.product.retailerSku === "16408615");
+    expect(o).toMatchObject({
+      product: { title: "Lactaid 2% Reduced Fat Milk", sizeText: "96 fl oz" },
+      facts: { price: { amountMinor: 638 }, promoTags: ["Great price"] },
+    });
+    for (const x of out.observations) expect(x.product.sizeText).not.toMatch(/[★(]/);
+  });
+
+  it("every tile completes to a schema-valid PriceObservation", () => {
+    out.observations.forEach((o, i) => {
+      const parsed = PriceObservation.safeParse(minted(o, i + 1));
+      expect(parsed.success, JSON.stringify(parsed.success ? null : parsed.error.issues)).toBe(
+        true,
+      );
+    });
+  });
+
+  it("the same product id under two stores is two observations, not a duplicate", () => {
+    const skus = out.observations.map((o) => o.product.retailerSku);
+    expect(new Set(skus).size).toBeLessThan(skus.length);
+    expect(new Set(out.observations.map((o) => o.product.url)).size).toBe(skus.length);
   });
 });
 

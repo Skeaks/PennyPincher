@@ -4,8 +4,12 @@
  * failing test, never a skipped one (the `for` below enumerates the directory; an empty
  * directory would fail the "at least one fixture" assertion).
  *
- * Two kinds of fixture (S17):
+ * Four kinds of fixture (S17):
  *  - a page the browser rendered (the Wegmans set): the adapter reads everything from the DOM.
+ *  - the product modal (`*-modal`): the Walmart milk page opened over the search results.
+ *    `#item_details` sits inside the "item details" dialog, the title is an `h2`, there is no
+ *    Delivery / Pickup control (fulfilment inferred), the store id is in the details panel id
+ *    and the label is the retailer row behind the modal.
  *  - an anonymous fetch (`*-anonymous-fetch-logged-out`): the server-rendered HTML the lever
  *    probe receives, with no JavaScript run. It is only ever met through the probe, which
  *    supplies `sessionState: "logged_out"` and `cleanSession: true`, so the fixture is
@@ -13,10 +17,13 @@
  *    Delivery / Pickup control, so session reads as unknown from the DOM alone and fulfilment
  *    is Instacart's default with `fulfillmentInferred`. Its store id lives only in hydration
  *    scripts, which the scrubber strips, so the DOM yields the store label alone.
+ *  - a search (`*-search-*`): a listing, not a product page. Its tiles are covered in
+ *    tiles.test.ts; here it only has to be classified as a listing.
  */
 import { PriceObservation } from "@pennypincher/schema";
 import { describe, expect, it } from "vitest";
 import type { PageContext } from "../../src/capture/adapter";
+import { textOf } from "../../src/capture/adapter";
 import { INSTACART_ADAPTER_VERSION, instacartAdapter } from "../../src/capture/adapters/instacart";
 import { evidenceHash } from "../../src/capture/evidence";
 import { buildObservation } from "../../src/capture/run";
@@ -25,25 +32,44 @@ import { type Fixture, fragmentDocument, listFixtures, parseDocument } from "./d
 
 const fixtures = listFixtures("instacart");
 
-type Kind = "page" | "anonymous";
+type Kind = "page" | "modal" | "anonymous" | "search";
 
 function kindOf(f: Fixture): Kind {
-  return f.slug.includes("anonymous-fetch") ? "anonymous" : "page";
+  if (f.slug.includes("anonymous-fetch")) return "anonymous";
+  if (f.slug.endsWith("-modal")) return "modal";
+  if (f.slug.includes("-search-")) return "search";
+  return "page";
 }
+
+const productFixtures = fixtures.filter((f) => kindOf(f) !== "search");
 
 function urlFor(f: Fixture): string {
   const sku = f.meta.expected.retailerSku;
-  // Real Instacart URL shapes, with query and fragment the adapter must strip. The anonymous
-  // fetch used the modal's shape, where the store is a query parameter that must survive.
-  return kindOf(f) === "anonymous"
-    ? `https://www.instacart.com/products/${sku}-${f.slug}?retailerSlug=walmart&utm_source=test#top`
-    : `https://www.instacart.com/store/wegmans/products/${sku}-${f.slug}?utm_source=test#top`;
+  // Real Instacart URL shapes, with query and fragment the adapter must strip. The modal and
+  // the anonymous fetch use the shape where the store is a query parameter that must survive.
+  switch (kindOf(f)) {
+    case "search":
+      return "https://www.instacart.com/store/s?k=Milk&search_id=9558e849#results";
+    case "modal":
+    case "anonymous":
+      return `https://www.instacart.com/products/${sku}-${f.slug}?retailerSlug=walmart&utm_source=test#top`;
+    case "page":
+      return `https://www.instacart.com/store/wegmans/products/${sku}-${f.slug}?utm_source=test#top`;
+  }
 }
 
 function canonicalFor(f: Fixture): string {
-  const base = urlFor(f).split("?")[0];
-  return kindOf(f) === "anonymous" ? `${base}?retailerSlug=walmart` : (base ?? "");
+  const base = urlFor(f).split("?")[0] ?? "";
+  return kindOf(f) === "page" ? base : `${base}?retailerSlug=walmart`;
 }
+
+/** Whether the rendered DOM carries the location id and a Delivery / Pickup control. */
+const RENDERS = {
+  page: { storeId: true, fulfillmentControl: true },
+  modal: { storeId: true, fulfillmentControl: false },
+  anonymous: { storeId: false, fulfillmentControl: false },
+  search: { storeId: false, fulfillmentControl: false },
+} as const;
 
 /** The context the adapter meets this fixture under: passive capture, or the probe. */
 function ctxFor(f: Fixture, overrides: Partial<PageContext> = {}): PageContext {
@@ -68,13 +94,25 @@ function byslug(slug: string): Fixture {
 const MILK = "walmart-whole-milk-1gal-anonymous-fetch-logged-out";
 
 describe("instacart adapter against every fixture", () => {
-  it("has fixtures of both kinds to test against", () => {
-    expect(fixtures.filter((f) => kindOf(f) === "page").length).toBeGreaterThanOrEqual(4);
-    expect(fixtures.filter((f) => kindOf(f) === "anonymous").length).toBeGreaterThanOrEqual(1);
+  it("has fixtures of every kind to test against", () => {
+    const kinds = fixtures.map(kindOf);
+    expect(kinds.filter((k) => k === "page").length).toBeGreaterThanOrEqual(4);
+    for (const k of ["modal", "anonymous", "search"] as const) expect(kinds).toContain(k);
   });
 
-  for (const f of fixtures) {
+  for (const f of fixtures.filter((x) => kindOf(x) === "search")) {
+    it(`${f.slug} is a listing, and the hero extractor says not_product_page`, () => {
+      expect(instacartAdapter.pageKind(urlFor(f))).toBe("listing");
+      expect(instacartAdapter.extract(parseDocument(f.html, urlFor(f)), ctxFor(f))).toEqual({
+        ok: false,
+        reason: "not_product_page",
+      });
+    });
+  }
+
+  for (const f of productFixtures) {
     const kind = kindOf(f);
+    const renders = RENDERS[kind];
     describe(f.slug, () => {
       it("matches the product URL as a product surface", () => {
         expect(instacartAdapter.matches(urlFor(f))).toBe(true);
@@ -93,7 +131,7 @@ describe("instacart adapter against every fixture", () => {
       it("extracts the store the sidecar records, as far as the DOM shows it", () => {
         const o = extractFixture(f);
         expect(o.store?.label).toBe(f.meta.store.label);
-        if (kind === "page") {
+        if (renders.storeId) {
           expect(o.store).toEqual(f.meta.store);
         } else {
           // The id is in the hydration scripts only; the scrubbed DOM has the label alone.
@@ -104,7 +142,7 @@ describe("instacart adapter against every fixture", () => {
       it("extracts the fulfilment the sidecar records, flagged when the page showed no control", () => {
         const o = extractFixture(f);
         expect(o.context.fulfillment).toBe(f.meta.fulfillment);
-        expect(o.context.fulfillmentInferred).toBe(kind === "page" ? undefined : true);
+        expect(o.context.fulfillmentInferred).toBe(renders.fulfillmentControl ? undefined : true);
       });
 
       it("extracts the session state the sidecar records", () => {
@@ -124,7 +162,7 @@ describe("instacart adapter against every fixture", () => {
       it("records no zip3 (the fixture's ZIP is scrubbed); cleanSession only from the probe", () => {
         const o = extractFixture(f);
         expect(o.context.zip3).toBeUndefined();
-        expect(o.context.cleanSession).toBe(kind === "page" ? undefined : true);
+        expect(o.context.cleanSession).toBe(kind === "anonymous" ? true : undefined);
       });
 
       it("canonicalises the URL and carries surface, device and provenance", () => {
@@ -349,57 +387,63 @@ describe("instacart adapter: JSON-LD first", () => {
 });
 
 describe("instacart adapter: the product modal", () => {
-  /**
-   * No modal fixture has been recorded yet. This builds the shape the brief describes from a
-   * rendered page: the hero markup inside a dialog with a Back control, no `#item_details`.
-   */
-  function modalDocument(f: Fixture): Document {
-    const doc = parseDocument(f.html, urlFor(f));
-    const details = doc.querySelector("#item_details");
-    if (!details) throw new Error("fixture has no #item_details");
-    const dialog = doc.createElement("div");
-    dialog.setAttribute("role", "dialog");
-    dialog.setAttribute("aria-modal", "true");
-    const back = doc.createElement("button");
-    back.textContent = "Back";
-    dialog.appendChild(back);
-    while (details.firstChild) dialog.appendChild(details.firstChild);
-    details.remove();
-    doc.body.appendChild(dialog);
-    return doc;
-  }
+  const f = byslug("walmart-whole-milk-1gal-modal");
 
-  it("extracts the same hero fields from the dialog as from the standalone page", () => {
-    const f = byslug("wegmans-bananas");
-    const result = instacartAdapter.extract(modalDocument(f), ctxFor(f));
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-    const page = extractFixture(f);
-    expect(result.observation.product).toEqual(page.product);
-    expect(result.observation.facts).toEqual(page.facts);
-    expect(result.observation.store).toEqual(page.store);
-    expect(result.observation.context).toEqual(page.context);
-    expect(result.observation.evidenceHash).toBe(page.evidenceHash);
+  it("reads the hero from #item_details inside the item-details dialog: h2 title, price, size, brand", () => {
+    const doc = parseDocument(f.html, urlFor(f));
+    const dialog = doc.querySelector('[aria-modal="true"][aria-label="item details"]');
+    expect(dialog?.querySelector("#item_details")).not.toBeNull();
+    expect(doc.querySelector("#item_details h1")).toBeNull();
+    expect(textOf(dialog?.querySelector("#item_details button"))).toBe("Back");
+    const o = extractFixture(f);
+    expect(o.product).toEqual({
+      retailerSku: "20654983",
+      title: "Great Value Whole Vitamin D Milk",
+      brand: "great value",
+      sizeText: "1 gal",
+      url: canonicalFor(f),
+    });
+    expect(o.facts).toEqual({
+      price: { amountMinor: 495, currency: "USD" },
+      priceText: "$4.95",
+      isEstimate: false,
+      unitPriceText: "$0.04/fl oz",
+      promoTags: [],
+      memberPrice: false,
+    });
+    expect(o.store).toEqual({ retailerStoreId: "151190", label: "Walmart" });
+    expect(o.context).toEqual({
+      fulfillment: "delivery",
+      fulfillmentInferred: true,
+      sessionState: "logged_in",
+      surface: "web",
+      device: "desktop",
+    });
   });
 
-  it("does not mistake a carousel tile inside the dialog for the hero", () => {
-    const f = byslug("wegmans-bananas");
-    const doc = modalDocument(f);
-    // Move the recommendation list ahead of the hero price inside the dialog.
-    const dialog = doc.querySelector('[role="dialog"]');
-    const list = doc.querySelector('[data-testid^="item_list_item"]')?.closest("ul");
-    if (!dialog || !list) throw new Error("no carousel to move");
-    dialog.insertBefore(list, dialog.firstChild);
-    const result = instacartAdapter.extract(doc, ctxFor(f));
-    expect(result.ok && result.observation.facts.price.amountMinor).toBe(22);
+  it("does not take a search tile behind the modal, nor the sticky header, for the hero price", () => {
+    const doc = parseDocument(f.html, urlFor(f));
+    // The Rollback tile ($4.78) and the 0.5 gal variant ($2.55) are on the page too.
+    expect(doc.body.textContent).toContain("Current price: $4.78");
+    expect(doc.body.textContent).toContain("$2.55");
+    expect(extractFixture(f).facts.price.amountMinor).toBe(495);
   });
 
-  it("the ZIP prompt dialog in the header is never taken for the modal", () => {
-    const f = byslug("wegmans-bananas");
+  it("the other dialogs on the page (welcome, cart, profiles) are never taken for the modal", () => {
     const doc = parseDocument(f.html, urlFor(f));
-    expect(doc.querySelector('[aria-modal="true"]')).not.toBeNull();
-    doc.querySelector("#item_details")?.remove();
-    expect(instacartAdapter.extract(doc, ctxFor(f))).toEqual({ ok: false, reason: "no_title" });
+    expect(doc.querySelectorAll('[aria-modal="true"]').length).toBeGreaterThan(1);
+    doc.querySelector('[aria-modal="true"][aria-label="item details"]')?.remove();
+    // What is left is the search page behind: tiles only, no hero price. The body fallback
+    // finds the hidden cart dialog's heading and then no price, so this is no_price.
+    expect(instacartAdapter.extract(doc, ctxFor(f))).toEqual({ ok: false, reason: "no_price" });
+  });
+
+  it("the location id is in the details panel id, the label in the retailer row behind", () => {
+    const doc = parseDocument(f.html, urlFor(f));
+    expect(doc.querySelector('[id^="item_details-items_151190-20654983"]')).not.toBeNull();
+    expect(doc.querySelector("#store-menu-wrapper h2")).not.toBeNull();
+    expect(textOf(doc.querySelector("#store-menu-wrapper h2"))).not.toBe("Walmart");
+    expect(textOf(doc.querySelector('a[href="/store/walmart/s"] [aria-level]'))).toBe("Walmart");
   });
 });
 

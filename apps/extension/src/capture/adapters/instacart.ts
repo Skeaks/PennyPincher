@@ -5,10 +5,15 @@
  * Three surfaces:
  *  - the standalone product page (`#item_details`),
  *  - the product modal that opens over a listing when a tile is clicked (URL becomes
- *    `/products/<sku>-…`; the DOM is an overlay with a "Back" control). No fixture yet: the
- *    modal root is found by shape (a dialog that contains a heading and a "Current price:"
- *    label) and `#item_details` is preferred wherever it exists,
- *  - listings (search, aisles, storefront), where every tile shows a price.
+ *    `/products/<sku>-…?retailerSlug=<slug>`): `div[aria-modal="true"][aria-label="item
+ *    details"]` holding the same `#item_details`, with a Back button and an `h2` title
+ *    (fixtures/instacart/walmart-whole-milk-1gal-modal). `role` and `hidden` are not kept by
+ *    the scrubber, so nothing here depends on them,
+ *  - listings: search, aisles, storefront. The cross-retailer search (`/store/s?k=…`,
+ *    fixtures/instacart/walmart-search-milk) groups tiles in
+ *    `li[data-testid="CrossRetailerResultRowWrapper"]` rows, each with an
+ *    `[aria-label="retailer"]` header (store link, label, "Delivery by …"); a tile's store and
+ *    fulfilment come from its row.
  *
  * Where each field lives (selectors avoid the hashed `e-…` emotion classes, which change per
  * build, and use ids, data-testids, aria attributes and text shapes instead):
@@ -17,7 +22,7 @@
  *                  the server-rendered HTML the probe fetches. When it names the page's SKU,
  *                  title, brand, size and price come from it and the evidence hash covers its
  *                  text; the DOM fills everything else and is the fallback.
- *  - title:        `h1` in the hero root.
+ *  - title:        `h1` in `#item_details`, else its first `h2` (the modal).
  *  - price:        `span.screen-reader-only` reading "Current price: $0.22 each (est.)", inside
  *                  the hero root and outside any carousel item. Its parent `<div>` is the
  *                  price container the evidence hash is computed over. The sticky header
@@ -26,14 +31,18 @@
  *  - sku, storeId: `#item_details-items_<storeId>-<sku>-Details`; the sku falls back to the
  *                  URL's `/products/<sku>-…`, the store id to any tile's
  *                  `data-testid="item_list_item_items_<storeId>-…"` on the page.
- *  - store label:  `#store-menu-wrapper h2` ("Wegmans", "Walmart").
- *  - sizeText:     the first `<span>` of the block right after the h1 ("16 oz", "1 gal",
- *                  "About 0.38 lb each"). Never derived from the title.
+ *  - store label:  `#store-menu-wrapper h2` ("Wegmans"), else the retailer link for the
+ *                  store slug, `a[href="/store/<slug>/s"] span[aria-level]` ("Walmart"), which
+ *                  the search rows and the "Shop all" link under the modal title share.
+ *  - sizeText:     the first leaf after the title that reads like a size ("16 oz", "1 gal",
+ *                  "About 0.38 lb each", "52 fl oz"), skipping star ratings and prices. Never
+ *                  derived from the title.
  *  - unitPriceText: "$0.59 / lb", "$0.04/fl oz" in the same block, "•" dropped.
  *  - brand:        the "Shop all <brand>" link under the title (rendered lower case).
  *  - fulfilment:   `[aria-label="service type"] button[aria-current="true"]` ("Delivery" /
- *                  "Pickup"). Absent on server-rendered HTML and some listings: then
- *                  `delivery`, Instacart's default, with `fulfillmentInferred: true`.
+ *                  "Pickup"), else "Delivery by …" / "Pickup ready by …" in the header or, for
+ *                  a tile, in its retailer row. Absent on server-rendered HTML and in the
+ *                  modal: then `delivery`, Instacart's default, with `fulfillmentInferred`.
  *  - session:      logged out when the auth modal is open (`body.body--auth-modal-open`), a
  *                  `[data-testid="nav-login"]` exists, or the header has a "Log in" button.
  *                  Logged in when the header rendered its search form or cart button without
@@ -43,13 +52,14 @@
  *                  fixture this is absent; the test un-scrubs a copy to cover the path.
  *  - wasPrice:     an "Original price: $X" screen-reader span, <s>/<del>, or "was $X" text
  *                  next to the price. No hero fixture shows one.
- *  - promoTags:    badge text next to the price that reads like an offer ("Rollback").
+ *  - promoTags:    badge text next to the price that reads like an offer ("Rollback",
+ *                  "10% off", "Best seller", "Great price").
  *  - memberPrice:  "Instacart+" or "member" next to the price. None on the fixtures.
  *  - tiles:        `[data-item-card="true"]` (or `li[data-testid^="item_list_item"]`), each
  *                  with an `a[href*="/products/"]`, the same "Current price:" label, an `h3`
  *                  title (or the "Add 1 ct <title>" button label), and a size / unit block.
- *                  Tile product URLs carry `?retailerSlug=<slug>` from the storefront link so
- *                  the probe fetches the same store.
+ *                  Tile product URLs carry `?retailerSlug=<slug>` (the row's, else the
+ *                  page's) so the probe fetches the same store.
  */
 import type { Fulfillment, SessionState, StoreRef } from "@pennypincher/schema";
 import {
@@ -82,11 +92,17 @@ const ORIGINAL_PRICE = /^\s*original price:\s*/i;
 const WAS_PRICE = /\bwas\s+(\$\s?\d[\d,]*(?:\.\d{2})?)/i;
 const ESTIMATE = /\(est\.?\)|\bestimated\b/i;
 const PROMO =
-  /\b(?:rollback|clearance|reduced|\d+% off|\$[\d.]+ off|buy \d+,? get|bogo|sale|deal|coupon|free)\b/i;
+  /\b(?:rollback|clearance|reduced|price drop|low price|great price|best seller|\d+% off|\$[\d.]+ off|buy \d+,? get|bogo|sale|deal|coupon|free)\b/i;
+/** Reads like a size: a number, or "each" / "per", and not a price, a rating or a count. */
+const SIZE_TEXT = /(?:\d|\b(?:each|per|bunch)\b)/i;
+const NOT_SIZE = /^[★☆(]|\$|\bsizes?\b|\bstock\b|\bsponsored\b/i;
 const MEMBER = /instacart\+|\bmembers?\b/i;
 const ZIP_PROMPT = /\bis\s+(\d{5})(?:-\d{4})?\s+your\s+zip\s+code\b/i;
 const ZIP_FALLBACK = /\bzip code\b[^0-9]{0,30}(\d{5})\b/i;
 const STOREFRONT_HREF = /^\/store\/([^/]+)\/storefront\/?$/;
+const STORE_SEARCH_HREF = /^\/store\/([^/]+)\/s\/?$/;
+const ITEM_DETAILS_MODAL = '[aria-modal="true"][aria-label="item details" i]';
+const RETAILER_ROW = '[data-testid="CrossRetailerResultRowWrapper"], section[data-item-list]';
 const ADD_LABEL = /^add\s+(?:\d+\s*(?:ct|count|each|lb|oz)?\s+)?(.+)$/i;
 const NOT_IN_HERO = 'li, ul, [data-testid^="item_list_item"], [data-item-card]';
 
@@ -123,25 +139,53 @@ function matches(url: string): boolean {
 // Page-level reads, shared by the hero and the tiles.
 // ---------------------------------------------------------------------------------------------
 
-function findStoreLabel(doc: Document): string | undefined {
-  return (
-    textOf(doc.querySelector("#store-menu-wrapper h2")) ||
-    textOf(doc.querySelector('a[href$="/storefront"] h2')) ||
-    undefined
-  );
+function hrefPath(link: Element): string | undefined {
+  try {
+    return new URL(link.getAttribute("href") ?? "", "https://www.instacart.com/").pathname;
+  } catch {
+    return undefined;
+  }
 }
 
-/** The store slug in the storefront link: `/store/walmart/storefront` gives "walmart". */
-function findStoreSlug(doc: Document): string | undefined {
-  for (const link of Array.from(doc.querySelectorAll('a[href*="/storefront"]'))) {
-    const href = link.getAttribute("href") ?? "";
-    let path: string;
-    try {
-      path = new URL(href, "https://www.instacart.com/").pathname;
-    } catch {
-      continue;
-    }
-    const m = STOREFRONT_HREF.exec(path);
+/** The label a retailer link renders: its `[aria-level]` span, else its text unless "Shop all …". */
+function retailerLinkLabel(link: Element): string | undefined {
+  const level = textOf(link.querySelector("[aria-level]"));
+  if (level) return level;
+  const text = textOf(link);
+  return text && !/^shop all\b/i.test(text) ? text : undefined;
+}
+
+/**
+ * The store label: the storefront header (`#store-menu-wrapper h2`), else the retailer link
+ * for `slug` (`a[href="/store/<slug>/s"]`, as the search rows and the modal's "Shop all"
+ * link render it).
+ */
+function findStoreLabel(scope: ParentNode, slug: string | undefined): string | undefined {
+  const header =
+    textOf(scope.querySelector('#store-menu-wrapper a[href*="/storefront"] h2')) ||
+    textOf(scope.querySelector('a[href$="/storefront"] h2'));
+  if (header) return header;
+  if (slug === undefined) return undefined;
+  for (const link of Array.from(scope.querySelectorAll("a[href]"))) {
+    const m = STORE_SEARCH_HREF.exec(hrefPath(link) ?? "");
+    if (m?.[1] !== slug) continue;
+    const label = retailerLinkLabel(link);
+    if (label) return label;
+  }
+  return undefined;
+}
+
+/**
+ * The store slug: the storefront link (`/store/walmart/storefront`), else a store search link
+ * (`/store/walmart/s`, which the "Shop all" link under a title and the search rows use).
+ */
+function findStoreSlug(scope: ParentNode): string | undefined {
+  for (const link of Array.from(scope.querySelectorAll('a[href*="/storefront"]'))) {
+    const m = STOREFRONT_HREF.exec(hrefPath(link) ?? "");
+    if (m?.[1]) return m[1];
+  }
+  for (const link of Array.from(scope.querySelectorAll('a[href*="/store/"]'))) {
+    const m = STORE_SEARCH_HREF.exec(hrefPath(link) ?? "");
     if (m?.[1]) return m[1];
   }
   return undefined;
@@ -174,12 +218,26 @@ function findFulfillment(doc: Document, override: Fulfillment | undefined): Fulf
   const label = textOf(selected).toLowerCase();
   if (label.includes("delivery")) return { fulfillment: "delivery", inferred: false };
   if (label.includes("pickup")) return { fulfillment: "pickup", inferred: false };
-  const header = textOf(doc.querySelector("#commonHeader"));
-  if (/\bdelivery by\b/i.test(header)) return { fulfillment: "delivery", inferred: false };
-  if (/\bpickup (?:at|by|from|ready)\b/i.test(header)) {
+  return fulfillmentInText(leafText(doc.querySelector("#commonHeader")));
+}
+
+/** "Delivery by 1:45pm" / "Pickup ready …" in a header or a retailer row; else the default. */
+function fulfillmentInText(text: string): FulfillmentRead {
+  if (/\bdelivery by\b/i.test(text)) return { fulfillment: "delivery", inferred: false };
+  if (/\bpickup (?:at|by|from|ready|available|only)\b/i.test(text)) {
     return { fulfillment: "pickup", inferred: false };
   }
   return { fulfillment: "delivery", inferred: true };
+}
+
+/** Leaf texts joined with spaces: adjacent leaves have no separator in `textContent`. */
+function leafText(scope: Element | null): string {
+  if (!scope) return "";
+  const parts: string[] = [];
+  for (const el of Array.from(scope.querySelectorAll("*"))) {
+    if (el.children.length === 0) parts.push(textOf(el));
+  }
+  return parts.filter((p) => p !== "").join(" ");
 }
 
 function findSessionState(doc: Document): SessionState {
@@ -215,11 +273,12 @@ interface PageFacts {
   zip3: string | undefined;
 }
 
-function readPage(doc: Document, ctx: PageContext): PageFacts {
+function readPage(doc: Document, ctx: PageContext, slugScope: ParentNode = doc): PageFacts {
+  const storeSlug = findStoreSlug(slugScope) ?? findStoreSlug(doc);
   return {
     storeId: findStoreId(doc),
-    storeLabel: findStoreLabel(doc),
-    storeSlug: findStoreSlug(doc),
+    storeLabel: findStoreLabel(doc, storeSlug),
+    storeSlug,
     fulfillment: findFulfillment(doc, ctx.fulfillment),
     sessionState: ctx.sessionState ?? findSessionState(doc),
     zip3: findZip3(doc),
@@ -300,29 +359,40 @@ function readPriceNeighbours(priceContainer: Element, scope: Element): PriceNeig
   return withDefined({ wasPrice, promoTags, memberPrice });
 }
 
-/** Size and unit price sit in the block right after the title. */
-function findSizeAndUnit(title: Element): { sizeText?: string; unitPriceText?: string } {
-  const block = title.nextElementSibling;
-  if (!block) return {};
-  let sizeText: string | undefined;
-  for (const el of Array.from(block.querySelectorAll("*"))) {
-    if (el.children.length > 0) continue;
-    const text = textOf(el);
-    if (text && !text.includes("$")) {
-      sizeText = text;
-      break;
+/** Leaves of the blocks that follow `title`, in order, skipping rating widgets and the price. */
+function leavesAfter(title: Element): Element[] {
+  const out: Element[] = [];
+  for (let el = title.nextElementSibling; el; el = el.nextElementSibling) {
+    if (el.querySelector("span.screen-reader-only")) break;
+    for (const leaf of Array.from(el.querySelectorAll("*"))) {
+      if (leaf.children.length > 0) continue;
+      if (leaf.closest('[aria-label^="Average rating" i], button, a[aria-label]')) continue;
+      out.push(leaf);
     }
   }
-  // Match per leaf, not on the block's joined text: adjacent leaves have no separator, so
-  // "$0.89 / lb" followed by "About 2.0 lb each" would read "lbAbout".
+  return out;
+}
+
+/**
+ * Size and unit price sit in the blocks after the title: on the hero right after the h1,
+ * on a tile after the h3 and (on search) a star-rating block.
+ */
+function findSizeAndUnit(title: Element): { sizeText?: string; unitPriceText?: string } {
+  let sizeText: string | undefined;
   let unitPriceText: string | undefined;
-  for (const el of Array.from(block.querySelectorAll("*"))) {
-    if (el.children.length > 0) continue;
-    const m = UNIT_PRICE.exec(textOf(el));
-    if (m?.[0]) {
-      unitPriceText = m[0].replace(/\s+/g, " ").trim();
-      break;
+  // Match per leaf, not on a block's joined text: adjacent leaves have no separator, so
+  // "$0.89 / lb" followed by "About 2.0 lb each" would read "lbAbout".
+  for (const leaf of leavesAfter(title)) {
+    const text = textOf(leaf);
+    if (!text) continue;
+    if (unitPriceText === undefined) {
+      const m = UNIT_PRICE.exec(text);
+      if (m?.[0]) unitPriceText = m[0].replace(/\s+/g, " ").trim();
     }
+    if (sizeText === undefined && SIZE_TEXT.test(text) && !NOT_SIZE.test(text)) {
+      sizeText = text;
+    }
+    if (sizeText !== undefined && unitPriceText !== undefined) break;
   }
   return withDefined({ sizeText, unitPriceText });
 }
@@ -348,24 +418,19 @@ interface Hero {
 }
 
 /**
- * The element the hero lives in. `#item_details` whenever it holds the title; otherwise the
- * product modal, recognised by shape: a dialog that contains a heading and a price label.
- * Failing both, the page itself, so a bare page still fails with a precise reason.
+ * The element the hero lives in: `#item_details`, preferring the one inside the product
+ * modal (`[aria-modal="true"][aria-label="item details"]`) when a modal is open over a page
+ * that has its own. The standalone page titles with an `h1`, the modal with an `h2`; the
+ * modal's first `h2` is the title (Nutrition, Ingredients follow). Failing everything, the
+ * page itself, so a bare page still fails with a precise reason.
  */
 function findHero(doc: Document): Hero | undefined {
-  const details = doc.querySelector("#item_details");
-  const detailsHeading = details?.querySelector("h1") ?? null;
-  if (details && detailsHeading) return { root: details, heading: detailsHeading };
-  const dialogs = doc.querySelectorAll(
-    '[role="dialog"], [aria-modal="true"], [data-testid*="modal" i], [data-testid*="dialog" i]',
-  );
-  for (const dialog of Array.from(dialogs)) {
-    const heading = dialog.querySelector("h1, h2");
-    if (!heading) continue;
-    if (!findPriceLabel(dialog, NOT_IN_HERO)) continue;
-    return { root: dialog, heading };
+  const details =
+    doc.querySelector(`${ITEM_DETAILS_MODAL} #item_details`) ?? doc.querySelector("#item_details");
+  if (details) {
+    return { root: details, heading: details.querySelector("h1") ?? details.querySelector("h2") };
   }
-  const root = details ?? doc.body;
+  const root = doc.body;
   return root ? { root, heading: root.querySelector("h1") } : undefined;
 }
 
@@ -409,7 +474,7 @@ function extractHero(doc: Document, ctx: PageContext): ExtractResult {
     evidence = evidenceHash(priceContainer);
   }
 
-  const page = readPage(doc, ctx);
+  const page = readPage(doc, ctx, root ?? doc);
   const detailsText = textOf(root);
   const isEstimate = ESTIMATE.test(priceLine) || /final cost by weight/i.test(detailsText);
   const neighbours = priceContainer
@@ -481,9 +546,33 @@ function tileUrl(
   return canonicalUrl(u.href);
 }
 
+/** What a tile inherits from its retailer row on a cross-retailer search, if it sits in one. */
+interface RowFacts {
+  storeSlug: string | undefined;
+  storeLabel: string | undefined;
+  fulfillment: FulfillmentRead | undefined;
+}
+
+function readRow(tile: Element): RowFacts | undefined {
+  const row = tile.closest(RETAILER_ROW);
+  const header = row?.querySelector('[aria-label="retailer" i]');
+  if (!row || !header) return undefined;
+  let storeSlug: string | undefined;
+  let storeLabel: string | undefined;
+  for (const link of Array.from(header.querySelectorAll("a[href]"))) {
+    const m = STORE_SEARCH_HREF.exec(hrefPath(link) ?? "");
+    if (!m?.[1]) continue;
+    storeSlug = m[1];
+    storeLabel = retailerLinkLabel(link);
+    break;
+  }
+  const read = fulfillmentInText(leafText(header));
+  return { storeSlug, storeLabel, fulfillment: read.inferred ? undefined : read };
+}
+
 function tileReader(doc: Document, ctx: PageContext): TileReader {
   const page = readPage(doc, ctx);
-  const context = contextOf(page, ctx);
+  const pageContext = contextOf(page, ctx);
   return {
     tiles(d) {
       const cards = Array.from(d.querySelectorAll('[data-item-card="true"]'));
@@ -495,7 +584,14 @@ function tileReader(doc: Document, ctx: PageContext): TileReader {
       const href = link?.getAttribute("href") ?? "";
       const sku = link ? skuInUrl(href) : undefined;
       if (!link || !sku) return fail("no_sku");
-      const url = tileUrl(href, ctx, page.storeSlug);
+      const row = readRow(tile);
+      const storeSlug = row?.storeSlug ?? page.storeSlug;
+      const storeLabel = row?.storeLabel ?? page.storeLabel;
+      const context =
+        row?.fulfillment && ctx.fulfillment === undefined
+          ? contextOf({ ...page, fulfillment: row.fulfillment }, ctx)
+          : pageContext;
+      const url = tileUrl(href, ctx, storeSlug);
       if (url === undefined) return fail("no_sku");
 
       const priceLabel = findPriceLabel(tile, undefined);
@@ -538,7 +634,7 @@ function tileReader(doc: Document, ctx: PageContext): TileReader {
         adapter: `instacart@${INSTACART_ADAPTER_VERSION}`,
         evidenceHash: evidenceHash(priceContainer),
       };
-      const store = storeRef(storeId, page.storeLabel);
+      const store = storeRef(storeId, storeLabel);
       if (store) observation.store = store;
       return { ok: true, observation };
     },

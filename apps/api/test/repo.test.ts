@@ -1,6 +1,7 @@
 import { SCHEMA_VERSION } from "@pennypincher/schema";
 import { describe, expect, it } from "vitest";
 import migration from "../migrations/0001_observations.sql?raw";
+import identityMigration from "../migrations/0003_product_identity.sql?raw";
 import { INSERT_SQL, OBSERVATION_COLUMNS, bindingsFor } from "../src/repo/d1";
 import { MemoryObservationRepo } from "../src/repo/memory";
 import { cellKey, toRow } from "../src/repo/observations";
@@ -66,13 +67,18 @@ describe("toRow", () => {
 });
 
 describe("D1 statement", () => {
+  // The columns 0001 creates plus the ones 0003 (S13) adds with ALTER TABLE.
   const tableColumns = (() => {
     const body = /CREATE TABLE IF NOT EXISTS observations \(([^;]*)\);/.exec(migration)?.[1] ?? "";
-    return body
+    const created = body
       .split("\n")
       .map((line) => line.trim())
       .filter((line) => line.length > 0 && !line.startsWith("--"))
       .map((line) => line.split(/\s+/)[0] ?? "");
+    const added = [...identityMigration.matchAll(/ALTER TABLE observations ADD COLUMN (\w+)/g)].map(
+      (m) => m[1] ?? "",
+    );
+    return [...created, ...added];
   })();
 
   it("inserts exactly the columns the migration creates", () => {

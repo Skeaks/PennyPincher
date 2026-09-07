@@ -1,4 +1,5 @@
 import type { PriceObservation } from "@pennypincher/schema";
+import { canonicalCellKey } from "./products";
 
 /**
  * One stored observation: the flattened columns of the `observations` table (see
@@ -29,6 +30,13 @@ export interface ObservationRow {
   cellKey: string;
   rawJson: string;
   receivedAt: string;
+  /**
+   * Product identity (S13, migration 0003). Absent on rows built without a products repo
+   * (stored as NULL); null when the title normalised to nothing.
+   */
+  canonicalId?: string | null;
+  /** `canonicalId|fulfillment|zip3`, the cross-retailer cell. Null whenever canonicalId is. */
+  canonicalCellKey?: string | null;
 }
 
 export interface InsertResult {
@@ -82,6 +90,11 @@ export interface ObservationRepo {
   /** Every row of one panelist with `observedAt` in `[from, to]`, same slack as listByCell. */
   listByPanelist(panelistId: string, from: Date, to: Date): Promise<ObservationRow[]>;
   /**
+   * Every row of one cross-retailer cell (S13: `canonicalId|fulfillment|zip3`) in
+   * `[from, to]`, same slack as listByCell. Rows with no canonical id never match.
+   */
+  listByCanonicalCell(canonicalCellKey: string, from: Date, to: Date): Promise<ObservationRow[]>;
+  /**
    * Remove everything stored under a panelistId: observations, the abuse flag, rate buckets.
    * Idempotent; an unknown id deletes nothing and is not an error.
    */
@@ -115,9 +128,26 @@ export function cellKey(o: PriceObservation): string {
   ].join("|");
 }
 
-/** Flatten a validated observation into a row. `receivedAt` is the server clock at ingest. */
-export function toRow(o: PriceObservation, receivedAt: string): ObservationRow {
+/**
+ * Flatten a validated observation into a row. `receivedAt` is the server clock at ingest.
+ * `identity` (S13) is the resolved product id for this observation's SKU; when given, the
+ * row carries `canonicalId` and `canonicalCellKey` (both null for an id of null).
+ */
+export function toRow(
+  o: PriceObservation,
+  receivedAt: string,
+  identity?: { canonicalId: string | null },
+): ObservationRow {
+  const canonical =
+    identity === undefined
+      ? {}
+      : {
+          canonicalId: identity.canonicalId,
+          canonicalCellKey:
+            identity.canonicalId === null ? null : canonicalCellKey(o, identity.canonicalId),
+        };
   return {
+    ...canonical,
     observationId: o.observationId,
     schemaVersion: o.schemaVersion,
     panelistId: o.panelistId,

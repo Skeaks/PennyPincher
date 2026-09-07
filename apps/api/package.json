@@ -12,6 +12,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@pennypincher/normalize": "workspace:*",
     "@pennypincher/schema": "workspace:*",
     "@pennypincher/stats": "workspace:*",
     "hono": "4.13.5"

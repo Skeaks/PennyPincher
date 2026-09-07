@@ -41,6 +41,16 @@ export const INSERT_SQL = `INSERT OR IGNORE INTO observations (${OBSERVATION_COL
 
 const SELECT_SQL = `SELECT ${OBSERVATION_COLUMNS.join(", ")} FROM observations WHERE observation_id = ?1`;
 
+/**
+ * One cell's rows in a time range, on the (cell_key, observed_at) index. The bounds compare
+ * ISO-8601 strings: the schema pins `observedAt` to the UTC "Z" form, so the order is
+ * chronological except that "…:18Z" sorts after "…:18.000Z". `listByCell` widens the bounds
+ * by a second to cover that and the caller re-filters exactly.
+ */
+export const SELECT_BY_CELL_SQL = `SELECT ${OBSERVATION_COLUMNS.join(", ")} FROM observations WHERE cell_key = ?1 AND observed_at >= ?2 AND observed_at <= ?3 ORDER BY observed_at`;
+
+const BOUND_SLACK_MS = 1_000;
+
 /** The shape D1 hands back for SELECT_SQL. */
 interface DbRecord {
   observation_id: string;
@@ -122,5 +132,15 @@ export class D1ObservationRepo implements ObservationRepo {
   async getById(observationId: string): Promise<ObservationRow | undefined> {
     const record = await this.db.prepare(SELECT_SQL).bind(observationId).first<DbRecord>();
     return record ? fromRecord(record) : undefined;
+  }
+
+  async listByCell(cellKey: string, from: Date, to: Date): Promise<ObservationRow[]> {
+    const lower = new Date(from.getTime() - BOUND_SLACK_MS).toISOString();
+    const upper = new Date(to.getTime() + BOUND_SLACK_MS).toISOString();
+    const { results } = await this.db
+      .prepare(SELECT_BY_CELL_SQL)
+      .bind(cellKey, lower, upper)
+      .all<DbRecord>();
+    return results.map(fromRecord);
   }
 }

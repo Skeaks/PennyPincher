@@ -2,7 +2,7 @@
   "name": "api",
   "version": "0.1.0",
   "private": true,
-  "description": "PennyPincher ingest API. Hono on Cloudflare Workers with D1: accepts an ObservationBatch, validates it against @pennypincher/schema (PII guard included), stores it idempotently.",
+  "description": "PennyPincher ingest + query API. Hono on Cloudflare Workers with D1: accepts an ObservationBatch, validates it against @pennypincher/schema (PII guard included), stores it idempotently, and serves each cell's resolved price ladder.",
   "type": "module",
   "scripts": {
     "dev": "wrangler d1 migrations apply DB --local && wrangler dev",
@@ -13,10 +13,12 @@
   },
   "dependencies": {
     "@pennypincher/schema": "workspace:*",
+    "@pennypincher/stats": "workspace:*",
     "hono": "4.13.5"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "5.20260904.1",
+    "@pennypincher/synth": "workspace:*",
     "typescript": "5.7.3",
     "vitest": "3.0.5",
     "wrangler": "4.129.0"

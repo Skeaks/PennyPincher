@@ -75,6 +75,22 @@ importers:
         specifier: 22.10.5
         version: 22.10.5
 
+  packages/stats:
+    dependencies:
+      '@pennypincher/schema':
+        specifier: workspace:*
+        version: link:../schema
+    devDependencies:
+      '@pennypincher/synth':
+        specifier: workspace:*
+        version: link:../synth
+      '@types/node':
+        specifier: 22.10.5
+        version: 22.10.5
+      fast-check:
+        specifier: 4.9.0
+        version: 4.9.0
+
   packages/synth:
     dependencies:
       '@pennypincher/schema':
@@ -1297,6 +1313,10 @@ packages:
   exsolve@1.1.1:
     resolution: {integrity: sha512-9U/jZUgjnSGyntRr6y5Muu1MJcwFl6kPu7k8qLF0IMNfLqvw0NZ4nnVDq0RVoZ0RvCyumib4Ez3KYrVfilrw+g==}
 
+  fast-check@4.9.0:
+    resolution: {integrity: sha512-7ms6T7SybUev/PQITciI0yLM2pOSFy5zpG8Ty7tQofcVaQUvrMXp6CBwqF6fThLCLOrfBtuHAtwq6Yu4XPCllg==}
+    engines: {node: '>=12.17.0'}
+
   fdir@6.5.0:
     resolution: {integrity: sha512-tIbYtZbucOs0BRGqPJkshJUYdL+SDH7dVM8gjy+ERp3WAUjLEFJE+02kanyHtwjWOnwrKYBiwAmM0p4kLJAnXg==}
     engines: {node: '>=12.0.0'}
@@ -1479,6 +1499,9 @@ packages:
     resolution: {integrity: sha512-ovfBOz+cZIOBHZ+oxTfpv1kSGU7ruzy8CXoFGvhXsUbJuty45srGzf1ufEePs69virOWXfFbhZRoNQUdgPvwXA==}
     engines: {node: '>=22.0.0'}
     hasBin: true
+
+  pure-rand@8.4.2:
+    resolution: {integrity: sha512-vvuOGgcuPJAirlHvuQw1TrOiw7ptaIXXmIbNuiNOY6lNGJJH49PQ1Kj4nd783nPdQhQdicgOjVI2yI/9BD6/Ng==}
 
   quansync@0.2.11:
     resolution: {integrity: sha512-AifT7QEbW9Nri4tAwR5M/uzpBuqfZf+zwaEM/QkzEjj7NBuFD2rBuy0K3dE+8wltbezDV7JMA0WfnCPYRSYbXA==}
@@ -2701,6 +2724,10 @@ snapshots:
 
   exsolve@1.1.1: {}
 
+  fast-check@4.9.0:
+    dependencies:
+      pure-rand: 8.4.2
+
   fdir@6.5.0(picomatch@4.0.7):
     optionalDependencies:
       picomatch: 4.0.7
@@ -2871,6 +2898,8 @@ snapshots:
       '@topcli/prompts': 4.0.0
       cac: 7.0.0
       tasuku: 2.3.0
+
+  pure-rand@8.4.2: {}
 
   quansync@0.2.11: {}
 

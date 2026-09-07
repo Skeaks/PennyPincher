@@ -1,0 +1,24 @@
+{
+  "name": "@pennypincher/stats",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Tier resolution for one cell: the discrete price set, each tier's share, the floor, and a coupon-collector confidence. Says UNRESOLVED, with how many more observations are needed, whenever the data cannot support an answer.",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@pennypincher/schema": "workspace:*"
+  },
+  "devDependencies": {
+    "@pennypincher/synth": "workspace:*",
+    "@types/node": "22.10.5",
+    "fast-check": "4.9.0"
+  }
+}

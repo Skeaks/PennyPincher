@@ -1,5 +1,5 @@
 # Nightly: the slow checks that must NOT sit on the PR gate (CONTRIBUTING.md, "What the gate
-# checks"). Runs the full gate on main once a day plus, over time, mutation testing (S10) and E2E
+# checks"). Runs the full gate on main once a day plus mutation testing (S10) and, over time, E2E
 # against recorded fixtures. Never blocks a merge: on failure it opens (or updates) an issue.
 #
 # Agents cannot edit this file: see .github/CODEOWNERS and CLAUDE.md rule 4.
@@ -39,10 +39,12 @@ jobs:
       - name: gate
         run: pnpm gate
 
-      # - name: mutation testing (S10)
-      #   # Stryker over packages/stats and packages/schema. Report the score; fail below the floor
-      #   # set in S10's brief.
-      #   run: pnpm --filter @pennypincher/stats mutation
+      - name: mutation testing (S10)
+        # Stryker over packages/stats (packages/normalize joins in S13). The score is reported,
+        # not enforced, until 2026-09-21 (`break: null` in packages/stats/stryker.config.json);
+        # after that the config sets `break` to the observed score minus 5 and this step fails
+        # below it. About 5 minutes locally at concurrency 6; the 4-core runner uses 3.
+        run: pnpm --filter @pennypincher/stats mutation
 
       # - name: e2e against recorded fixtures (S05+)
       #   # Load the unpacked extension in headless Chromium against fixtures/ (never a live

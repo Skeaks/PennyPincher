@@ -1,3 +1,4 @@
+import { SCHEMA_VERSION } from "@pennypincher/schema";
 import { describe, expect, it } from "vitest";
 import migration from "../migrations/0001_observations.sql?raw";
 import { INSERT_SQL, OBSERVATION_COLUMNS, bindingsFor } from "../src/repo/d1";
@@ -28,7 +29,7 @@ describe("toRow", () => {
     const row = toRow(o, "2026-09-04T16:00:00.000Z");
     expect(row).toEqual({
       observationId: o.observationId,
-      schemaVersion: "1.0.0",
+      schemaVersion: SCHEMA_VERSION,
       panelistId: o.panelistId,
       observedAt: o.observedAt,
       retailer: "instacart",

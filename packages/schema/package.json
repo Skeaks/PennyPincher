@@ -1,6 +1,6 @@
 {
   "name": "@pennypincher/schema",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "description": "The observation contract. Every price the panel captures is validated against this before it is stored. Versioned; bump SCHEMA_VERSION and add a docs/migrations entry on any breaking change.",
   "type": "module",

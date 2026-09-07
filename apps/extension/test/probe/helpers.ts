@@ -27,6 +27,9 @@ export const URL_STRAWBERRIES =
 export const URL_TARGET_BANANA =
   "https://www.target.com/p/fresh-banana-each-good-38-gather-8482/-/A-15013944";
 export const URL_WALMART_BANANA = "https://www.walmart.com/ip/Fresh-Banana-Each/44390948";
+/** The modal's URL shape: the store is a query parameter, kept by canonicalisation (S17). */
+export const URL_MILK =
+  "https://www.instacart.com/products/20654983-great-value-milk-vitamin-d-whole-1-gl?retailerSlug=walmart";
 
 export const PANELIST = "0b1c2d3e-4f50-4a61-9b72-83c4d5e6f7a8";
 export const T0 = new Date("2026-09-04T15:30:00.000Z");
@@ -48,8 +51,9 @@ export function ownInstacartObservation(
   fx: Fixture,
   url: string,
   observationId = "11111111-0000-4000-8000-000000000001",
+  overrides: Partial<PageContext> = {},
 ): PriceObservation {
-  const ctx: PageContext = { url, surface: "web", device: "desktop" };
+  const ctx: PageContext = { url, surface: "web", device: "desktop", ...overrides };
   const result = instacartAdapter.extract(parseDocument(fx.html, url), ctx);
   if (!result.ok) throw new Error(`fixture ${fx.slug} did not extract: ${result.reason}`);
   return buildObservation(result.observation, {
@@ -112,6 +116,7 @@ export function sidecarAdapter(fx: Fixture, matchHost: string): Adapter {
     name: fx.meta.retailer,
     version: "0.0.0",
     matches: (url) => new URL(url).hostname.endsWith(matchHost),
+    pageKind: (url) => (new URL(url).hostname.endsWith(matchHost) ? "product" : undefined),
     extract(doc, ctx): ExtractResult {
       const text = doc.body?.textContent ?? "";
       if (!text.includes(fx.meta.expected.priceText)) return { ok: false, reason: "no_price" };

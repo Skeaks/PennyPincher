@@ -144,6 +144,14 @@ describe("consent copy", () => {
     expect(how).toMatch(/stops rather than follow/i);
   });
 
+  it("says prices are also recorded from search and aisle tiles, not only product pages (S17)", () => {
+    expect(C.intro).toMatch(/search results and aisles/i);
+    expect(C.collected.join(" ")).toMatch(/tile in search results or an aisle/i);
+    expect(C.notCollected.join(" ")).toMatch(/product, search, aisle or storefront page/i);
+    expect(all).not.toMatch(/not on a product page of a supported retailer/i);
+    expect(CONSENT_VERSION).toBeGreaterThanOrEqual(3);
+  });
+
   it("no longer claims the extension makes no network requests", () => {
     expect(all).not.toMatch(/no network requests/i);
   });

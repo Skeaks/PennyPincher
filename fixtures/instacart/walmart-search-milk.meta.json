@@ -1,0 +1,21 @@
+{
+  "retailer": "instacart",
+  "capturedAt": "2026-09-07T16:34:09Z",
+  "fulfillment": "delivery",
+  "sessionState": "logged_in",
+  "zip3": "191",
+  "store": {
+    "retailerStoreId": "151190",
+    "label": "Walmart"
+  },
+  "expected": {
+    "price": {
+      "amountMinor": 495,
+      "currency": "USD"
+    },
+    "priceText": "$4.95",
+    "title": "Great Value Whole Vitamin D Milk",
+    "retailerSku": "20654983"
+  },
+  "notes": "Cross-retailer search results for \"Milk\" (S17), URL /store/s?k=Milk, logged in. Not a product page: four li[data-testid=CrossRetailerResultRowWrapper] rows (Walmart, Giant Food Stores, Stop & Shop, Aldi), each with an [aria-label=retailer] header (a[href=\"/store/<slug>/s\"] span[aria-level=3] label, \"Delivery by 1:45pm\", distance) and 12 [data-item-card=true] tiles. Tiles carry no store id; `store` above is the Walmart row, whose location id 151190 comes from the paired modal's #item_details id. `expected` is the Walmart row's Great Value milk tile. The first Walmart tile is a Rollback: \"Current price: $4.78\", \"Original Price: $5.32\", badges \"Rollback\" and \"10% off\" (fairlife, sku 1343109, 52 fl oz). Tile size text follows a star-rating block. No JSON-LD, no Delivery/Pickup control; the row header carries the delivery line. Served ZIP 19123 is in the hydration scripts only."
+}

@@ -51,10 +51,11 @@ describe("scrubClone", () => {
   it("is a fixed point on already-scrubbed fixture markup", () => {
     for (const f of listFixtures("instacart")) {
       const doc = parseDocument(f.html);
-      const details = doc.querySelector("#item_details");
-      expect(details).not.toBeNull();
-      if (!details) continue;
-      expect(evidenceHtml(details)).toBe(details.outerHTML);
+      // Product pages and the modal have #item_details; a listing (S17) has tiles instead.
+      const el = doc.querySelector("#item_details") ?? doc.querySelector('[data-item-card="true"]');
+      expect(el, f.slug).not.toBeNull();
+      if (!el) continue;
+      expect(evidenceHtml(el)).toBe(el.outerHTML);
     }
   });
 });

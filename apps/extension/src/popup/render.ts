@@ -3,6 +3,7 @@
  * The ladder arrives in S11. No claim language anywhere in this file (CLAUDE.md rule 10).
  */
 import { browser } from "wxt/browser";
+import { loadListingTally } from "../capture/tally";
 import { hasConsent } from "../lib/consent";
 import { el, mount } from "../lib/dom";
 import { verdictDetail, verdictText } from "../probe/compare";
@@ -20,6 +21,12 @@ function priceRow(label: string, point: PricePoint | undefined): HTMLElement[] {
   return [el("dt", { text: label }), el("dd", { text: value })];
 }
 
+/** "No prices recorded on this page yet." / "1 price on this page recorded." / "12 prices …" */
+export function listingText(recorded: number): string {
+  if (recorded === 0) return "No prices recorded on this page yet.";
+  return `${recorded} ${recorded === 1 ? "price" : "prices"} on this page recorded.`;
+}
+
 /** The body of the popup for a view. Exported so the states can be rendered in isolation. */
 export function viewElement(view: PopupView): HTMLElement {
   switch (view.kind) {
@@ -27,6 +34,11 @@ export function viewElement(view: PopupView): HTMLElement {
       return el("p", { text: "Off until you consent." });
     case "unsupported":
       return el("p", { class: "muted", text: "Open a product page on a supported retailer." });
+    case "listing":
+      return el("div", {}, [
+        el("p", { text: listingText(view.recorded) }),
+        el("p", { class: "muted", text: "Open a product to compare its price." }),
+      ]);
     case "no_observation":
       return el("p", { class: "muted", text: "No price recorded for this page yet." });
     case "not_signed_in":
@@ -75,13 +87,14 @@ async function activeTabUrl(): Promise<string | undefined> {
 }
 
 export async function renderPopup(): Promise<void> {
-  const [consented, tabUrl, observations, probe] = await Promise.all([
+  const [consented, tabUrl, observations, probe, listingTally] = await Promise.all([
     hasConsent(),
     activeTabUrl(),
     list(),
     loadProbeState(),
+    loadListingTally(),
   ]);
-  const view = popupView({ consented, tabUrl, observations, probe });
+  const view = popupView({ consented, tabUrl, observations, probe, listingTally });
   const options = el("button", { type: "button", text: "Options" });
   options.addEventListener("click", () => {
     void browser.runtime.openOptionsPage();

@@ -19,7 +19,20 @@ describe("PriceObservation", () => {
   it("pins the schema version", () => {
     const bad = { ...validObservation(), schemaVersion: "0.1.0" };
     expect(PriceObservation.safeParse(bad).success).toBe(false);
-    expect(SCHEMA_VERSION).toBe("1.0.0");
+    expect(SCHEMA_VERSION).toBe("1.1.0");
+  });
+
+  it("accepts an optional fulfillmentInferred flag and leaves it absent by default (1.1.0)", () => {
+    const base = validObservation();
+    expect(PriceObservation.parse(base).context.fulfillmentInferred).toBeUndefined();
+    const inferred = validObservation({
+      context: { ...base.context, fulfillmentInferred: true },
+    });
+    expect(PriceObservation.parse(inferred).context.fulfillmentInferred).toBe(true);
+    const bad = validObservation({
+      context: { ...base.context, fulfillmentInferred: "yes" as unknown as boolean },
+    });
+    expect(PriceObservation.safeParse(bad).success).toBe(false);
   });
 
   it("rejects float money", () => {

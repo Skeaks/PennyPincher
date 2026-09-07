@@ -6,14 +6,20 @@
 import type { PriceObservation } from "@pennypincher/schema";
 import { canonicalUrl } from "../capture/adapter";
 import { ADAPTERS, findAdapter } from "../capture/registry";
+import type { ListingTally } from "../capture/tally";
 import { pricePoint } from "../probe/compare";
 import { type PricePoint, type ProbeResult, type ProbeState, probeKey } from "../probe/types";
 
 export type PopupView =
   /** No consent: nothing is captured or checked. */
   | { kind: "off" }
-  /** The tab is not a product page of a supported retailer. */
+  /** The tab is not a product or listing page of a supported retailer. */
   | { kind: "unsupported" }
+  /**
+   * A search, aisle or storefront page (S17). Prices there are per tile, so there is no
+   * single comparison; the popup says how many were recorded on this page.
+   */
+  | { kind: "listing"; recorded: number }
   /** A supported product page, but no price has been recorded for it yet. */
   | { kind: "no_observation" }
   /**
@@ -31,6 +37,8 @@ export interface PopupInputs {
   tabUrl: string | undefined;
   observations: readonly PriceObservation[];
   probe: ProbeState;
+  /** Per-listing counts kept by capture (`capture/tally.ts`). */
+  listingTally: ListingTally;
 }
 
 /** The user's own most recent observation of `url`: never a probe's anonymous row. */
@@ -49,7 +57,11 @@ export function latestOwnObservation(
 export function popupView(inputs: PopupInputs): PopupView {
   if (!inputs.consented) return { kind: "off" };
   const url = inputs.tabUrl === undefined ? undefined : canonicalUrl(inputs.tabUrl);
-  if (url === undefined || !findAdapter(url, ADAPTERS)) return { kind: "unsupported" };
+  const adapter = url === undefined ? undefined : findAdapter(url, ADAPTERS);
+  if (url === undefined || !adapter) return { kind: "unsupported" };
+  if (adapter.pageKind(url) === "listing") {
+    return { kind: "listing", recorded: inputs.listingTally[url]?.recorded ?? 0 };
+  }
   const mine = latestOwnObservation(inputs.observations, url);
   if (!mine) return { kind: "no_observation" };
   if (mine.context.sessionState !== "logged_in")

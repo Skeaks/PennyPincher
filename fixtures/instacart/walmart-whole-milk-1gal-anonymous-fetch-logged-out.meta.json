@@ -1,0 +1,21 @@
+{
+  "retailer": "instacart",
+  "capturedAt": "2026-09-07T15:21:00Z",
+  "fulfillment": "delivery",
+  "sessionState": "logged_out",
+  "zip3": "191",
+  "store": {
+    "retailerStoreId": "151190",
+    "label": "Walmart"
+  },
+  "expected": {
+    "price": {
+      "amountMinor": 495,
+      "currency": "USD"
+    },
+    "priceText": "$4.95",
+    "title": "Great Value Whole Vitamin D Milk",
+    "retailerSku": "20654983"
+  },
+  "notes": "Raw curl GET of /products/20654983-great-value-milk-vitamin-d-whole-1-gl?retailerSlug=walmart with no cookies and no JS: exactly what the S06 probe receives (S17). Server-rendered only: the header is a loading skeleton with no sign-in or account control (session reads as unknown from the DOM; the probe supplies logged_out), and there is no Delivery/Pickup control (fulfilment falls back to delivery, marked fulfillmentInferred). The store id 151190 (retailerLocationId) and the served ZIP (191xx, not the recorder's 085) exist only in the hydration scripts, which the scrubber strips, so the DOM yields store label \"Walmart\" alone. The raw page also carries a Product JSON-LD block (price 4.95, brand Great Value, size 1 gal); it is a <script> and is stripped here, so the JSON-LD path is tested on a composed copy of this page. The DOM brand link reads \"Shop all great value\" (lower case)."
+}

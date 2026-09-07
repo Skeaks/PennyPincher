@@ -19,6 +19,11 @@ export type UploadResult =
   | { ok: true; accepted: number; duplicates: number }
   | { ok: false; reason: "http_error" | "network_error" | "bad_response"; status?: number };
 
+/** What `DELETE /v1/panelists/:id` answers with (S14). `deleted` is the rows removed. */
+export type DeleteResult =
+  | { ok: true; deleted: number }
+  | { ok: false; reason: "http_error" | "network_error" | "bad_response"; status?: number };
+
 /** The slice of the API's cell response the popup reads (apps/api/src/routes/cells.ts). */
 export interface CellSummary {
   cellKey: string;
@@ -125,6 +130,43 @@ export async function postObservations(
       body: JSON.stringify({ observations }),
     });
     return await classifyUpload(response);
+  } catch {
+    return { ok: false, reason: "network_error" };
+  }
+}
+
+function isDeleteBody(value: unknown): value is { deleted: number } {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    typeof (value as { deleted: unknown }).deleted === "number"
+  );
+}
+
+export async function classifyDelete(response: ResponseLike): Promise<DeleteResult> {
+  if (!response.ok) return { ok: false, reason: "http_error", status: response.status };
+  try {
+    const body = await response.json();
+    if (!isDeleteBody(body)) return { ok: false, reason: "bad_response", status: response.status };
+    return { ok: true, deleted: body.deleted };
+  } catch {
+    return { ok: false, reason: "bad_response", status: response.status };
+  }
+}
+
+/** Remove everything the server holds under one panelist id (S14). Never throws. */
+export async function deletePanelist(
+  config: SyncConfig,
+  panelistId: string,
+): Promise<DeleteResult> {
+  const id = encodeURIComponent(panelistId);
+  try {
+    const response = await fetch(`${config.apiBaseUrl}/v1/panelists/${id}`, {
+      ...SYNC_FETCH_INIT,
+      method: "DELETE",
+      headers: headers(config, false),
+    });
+    return await classifyDelete(response);
   } catch {
     return { ok: false, reason: "network_error" };
   }

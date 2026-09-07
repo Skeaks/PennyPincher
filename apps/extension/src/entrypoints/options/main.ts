@@ -1,10 +1,11 @@
 import { browser } from "wxt/browser";
+import { deleteMyData, deleteOutcomeText } from "../../identity/delete";
 import { CONSENT_PAGE } from "../../lib/bootstrap";
 import { CONSENT_VERSION, getConsent, hasConsent, revokeConsent } from "../../lib/consent";
 import { el, mount } from "../../lib/dom";
-import { clearProbeState, loadProbeState } from "../../probe/state";
+import { loadProbeState } from "../../probe/state";
 import { probeSummaryElement } from "../../probe/summary";
-import { clear, count, exportAll } from "../../store";
+import { count, exportAll } from "../../store";
 
 function exportFilename(now: Date): string {
   return `pennypincher-export-${now.toISOString().slice(0, 10)}.json`;
@@ -37,7 +38,7 @@ function consentStatusText(
   return "Not given. The extension is off.";
 }
 
-async function render(): Promise<void> {
+async function render(notice?: string): Promise<void> {
   const [consented, record, rows, probes] = await Promise.all([
     hasConsent(),
     getConsent(),
@@ -55,9 +56,17 @@ async function render(): Promise<void> {
     void downloadExport();
   });
 
-  const deleteButton = el("button", { type: "button", class: "danger", text: "Delete my data" });
+  const deleteButton = el("button", {
+    type: "button",
+    class: "danger",
+    text: "Delete my data",
+  }) as HTMLButtonElement;
   deleteButton.addEventListener("click", () => {
-    void Promise.all([clear(), clearProbeState()]).then(render);
+    deleteButton.disabled = true;
+    void deleteMyData().then(
+      (outcome) => render(deleteOutcomeText(outcome)),
+      () => render("Something went wrong and nothing was removed. Try again."),
+    );
   });
 
   const withdrawButton = el("button", {
@@ -67,7 +76,7 @@ async function render(): Promise<void> {
   }) as HTMLButtonElement;
   withdrawButton.disabled = record === null;
   withdrawButton.addEventListener("click", () => {
-    void revokeConsent().then(render);
+    void revokeConsent().then(() => render());
   });
 
   mount(
@@ -94,9 +103,10 @@ async function render(): Promise<void> {
       probeSummaryElement(probes),
       el("h2", { text: "Delete" }),
       el("p", {
-        text: "Delete my data removes every observation and price check stored on this computer. Withdraw consent turns the extension off until you agree again.",
+        text: "Delete my data asks PennyPincher's server to remove every record sent under any ID this browser has used, then removes every observation and price check stored on this computer. Withdraw consent turns the extension off until you agree again.",
       }),
       el("div", { class: "row" }, [deleteButton, withdrawButton]),
+      ...(notice ? [el("p", { id: "delete-notice", class: "muted", text: notice })] : []),
     ]),
   );
 }

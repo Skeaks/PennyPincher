@@ -38,3 +38,8 @@ binding = "DB"
 database_name = "pennypincher-production"
 database_id = "93e9cd66-02be-433b-b77d-5dabca1069ec"
 migrations_dir = "migrations"
+
+# Retention (S14, docs/data-retention.md): the daily purge of raw rows older than 90 days.
+# `triggers` is inherited by every environment, so staging and production both run it.
+[triggers]
+crons = ["17 3 * * *"]

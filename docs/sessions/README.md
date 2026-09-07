@@ -24,9 +24,9 @@ and do that session."*
 | [S17](S17-instacart-surfaces.md) | Instacart surfaces: modal, tiles, anonymous HTML | Capture | S06 | Adapter reads the product modal, search tiles and the probe's raw HTML (JSON-LD); schema 1.1.0. **Done 2026-09-07.** |
 | [S10](S10-stats-hardening.md) | Stats hardening | Stats | S09 | Sticky-panel property tests, Stryker in nightly (88% local), `detectShift` stub. **Done 2026-09-07.** |
 | [S11](S11-query-api-and-ladder-ui.md) | Query API + ladder popup | Ingest, Capture | S07, S09 | `GET /v1/cells/:cellKey` (one vote per panelist); 15-minute sync upload; ladder + UNRESOLVED + contribution counter in popup. **Done 2026-09-07.** |
-| [S12](S12-adapters-target-walmart.md) | Adapters 2 and 3 + health beacon | Capture | S05, S17, S11 | Target, Walmart adapters; per-adapter parse success telemetry |
+| [S12](S12-adapters-target-walmart.md) | Adapters 2 and 3 + health beacon | Capture | S05, S17, S11 | Target, Walmart adapters (product pages + search tiles), adapter health beacon + `/v1/adapter-health`. **Done 2026-09-07.** |
 | [S13](S13-product-identity.md) | Product identity | Ingest | S07 | `packages/normalize`: UPC + fuzzy; golden fixtures |
-| [S14](S14-ingest-hardening.md) | Ingest hardening + deletion | Ingest | S07 | Dedup, rate limits, panelist rotation, delete-my-data endpoint |
+| [S14](S14-ingest-hardening.md) | Ingest hardening + deletion | Ingest | S07 | Rate limits, semantic dedup, abuse flag, 7-day panelist rotation, `DELETE /v1/panelists/:id`, 90-day retention. **Done 2026-09-07.** |
 | [S15](S15-pilot-pack.md) | Pilot pack | Compliance, Web | S06, S11, S14 | Privacy policy, consent copy, unlisted Web Store build, static landing + waitlist |
 | [S16](S16-closed-pilot.md) | Closed pilot + variance gate | All | S15 | 30 to 60 panelists, one metro, one retailer; go / pivot decision |
 

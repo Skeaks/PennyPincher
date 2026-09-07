@@ -21,10 +21,10 @@ and do that session."*
 | [S07](S07-api-ingest.md) | Ingest API | Ingest | S03 | Hono Worker + D1, validation, idempotency, PII guard. **Done 2026-09-04.** |
 | [S08](S08-deploy-loop.md) | Deploy loop | Platform | S07 | `deploy.yml`, staging + prod, rollback; the 1 to 5 minute number measured. **Done 2026-09-04 (#21); first production deploy is that merge.** |
 | [S09](S09-stats-resolve.md) | Tier resolution + confidence + UNRESOLVED | Stats | S03 | `packages/stats` core, tested on synth ground truth. **Done 2026-09-07.** |
-| [S17](S17-instacart-surfaces.md) | Instacart surfaces: modal, tiles, anonymous HTML | Capture | S06 | Adapter reads the product modal, search tiles and the probe's raw HTML (JSON-LD). **Run next to S09: without it real shopping records almost nothing.** |
+| [S17](S17-instacart-surfaces.md) | Instacart surfaces: modal, tiles, anonymous HTML | Capture | S06 | Adapter reads the product modal, search tiles and the probe's raw HTML (JSON-LD); schema 1.1.0. **Done 2026-09-07.** |
 | [S10](S10-stats-hardening.md) | Stats hardening | Stats | S09 | Sticky-panel property tests, Stryker in nightly (88% local), `detectShift` stub. **Done 2026-09-07.** |
-| [S11](S11-query-api-and-ladder-ui.md) | Query API + ladder popup | Ingest, Capture | S07, S09 | Cell query endpoint; ladder + UNRESOLVED + contribution counter in popup |
-| [S12](S12-adapters-target-walmart.md) | Adapters 2 and 3 + health beacon | Capture | S05 | Target, Walmart adapters; per-adapter parse success telemetry |
+| [S11](S11-query-api-and-ladder-ui.md) | Query API + ladder popup | Ingest, Capture | S07, S09 | `GET /v1/cells/:cellKey` (one vote per panelist); 15-minute sync upload; ladder + UNRESOLVED + contribution counter in popup. **Done 2026-09-07.** |
+| [S12](S12-adapters-target-walmart.md) | Adapters 2 and 3 + health beacon | Capture | S05, S17, S11 | Target, Walmart adapters; per-adapter parse success telemetry |
 | [S13](S13-product-identity.md) | Product identity | Ingest | S07 | `packages/normalize`: UPC + fuzzy; golden fixtures |
 | [S14](S14-ingest-hardening.md) | Ingest hardening + deletion | Ingest | S07 | Dedup, rate limits, panelist rotation, delete-my-data endpoint |
 | [S15](S15-pilot-pack.md) | Pilot pack | Compliance, Web | S06, S11, S14 | Privacy policy, consent copy, unlisted Web Store build, static landing + waitlist |

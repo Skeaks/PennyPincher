@@ -4,9 +4,13 @@
 #   PR labeled `deploy-staging` (and every push to it) -> staging
 #   workflow_dispatch                                   -> either, by hand
 #
-# One job, three steps that matter: apply D1 migrations (idempotent: D1 tracks what ran),
+# Two jobs. `deploy` (S08): apply D1 migrations (idempotent: D1 tracks what ran),
 # `wrangler deploy` (atomic: the whole Worker is replaced), then poll /healthz until it reports
-# this commit's SHA and print the measured time. Rollback is `wrangler rollback` or revert +
+# this commit's SHA and print the measured time. `pages` (S15): apply the waitlist D1
+# migrations, `wrangler pages deploy` (atomic: the whole site is replaced), then poll the site
+# until it serves. Both run on every qualifying push; redeploying an unchanged Worker or site
+# is a no-op that costs a minute, and that is simpler than a path filter that can be wrong.
+# Rollback is `wrangler rollback` (Worker), a Pages dashboard rollback (site), or revert +
 # merge; see docs/deploy.md. Secrets are CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID (repo
 # secrets, set by Jamie); PILOT_TOKEN lives in Cloudflare only.
 #
@@ -18,6 +22,7 @@ on:
     branches: [main]
     paths:
       - "apps/api/**"
+      - "apps/web/**"
       - "packages/**"
       - ".github/workflows/deploy.yml"
   pull_request:
@@ -103,4 +108,71 @@ jobs:
             sleep 2
           done
           echo "::error::$URL/healthz never reported build $BUILD_SHA (last: $body)"
+          exit 1
+
+  # The landing page and waitlist (S15): apps/web on Cloudflare Pages, project
+  # `pennypincher-web`. Push to main deploys the production branch; workflow_dispatch with
+  # `staging` deploys a preview branch of the same project. PR events are not deployed (the
+  # site is static; the PR shows the HTML). The waitlist D1 database and the Pages project are
+  # created once by Jamie; until the database id is in apps/web/wrangler.toml this job fails at
+  # the migration step and deploys nothing.
+  pages:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      TARGET: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'production' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: apply waitlist D1 migrations
+        working-directory: apps/web
+        run: pnpm exec wrangler d1 migrations apply WAITLIST_DB --remote
+
+      - name: wrangler pages deploy
+        id: pages
+        working-directory: apps/web
+        env:
+          # Pages' production branch is `main`; anything else is a preview deployment.
+          BRANCH: ${{ env.TARGET == 'production' && 'main' || 'staging' }}
+        run: |
+          pnpm exec wrangler pages deploy public --project-name pennypincher-web --branch "$BRANCH" --commit-hash "$GITHUB_SHA" --commit-dirty=true | tee deploy.log
+          URL=$(grep -oE 'https://[a-z0-9.-]+\.pages\.dev' deploy.log | tail -n1)
+          if [ -z "$URL" ]; then echo "::error::could not find the pages.dev URL in wrangler output"; exit 1; fi
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+
+      - name: verify the site serves
+        env:
+          URL: ${{ steps.pages.outputs.url }}
+          START: ${{ github.event_name == 'push' && github.event.head_commit.timestamp || '' }}
+        run: |
+          start=$(date -u -d "${START:-now}" +%s)
+          for i in $(seq 1 60); do
+            body=$(curl -sS --max-time 10 "$URL/" || true)
+            if echo "$body" | grep -q "Join the pilot waitlist"; then
+              elapsed=$(( $(date -u +%s) - start ))
+              {
+                echo "### pages: $TARGET"
+                echo "- URL: $URL/"
+                echo "- commit: \`$GITHUB_SHA\`"
+                echo "- ${START:+merge to live}${START:-job start to live}: **${elapsed}s**"
+              } >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "::error::$URL/ never served the landing page"
           exit 1

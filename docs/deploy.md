@@ -25,6 +25,24 @@ The exact URLs are printed in each deploy run's summary (Actions > deploy > run 
 Target from `CONTRIBUTING.md`: under 5 minutes. The verify step in `deploy.yml` prints the
 number in the job summary on every run, so this table can be refreshed from any later deploy.
 
+## The landing page (Pages, S15)
+
+`apps/web` is a Cloudflare Pages project, `pennypincher-web`. The `pages` job in `deploy.yml`
+runs on the same pushes as `deploy`: apply the waitlist D1 migrations
+(`wrangler d1 migrations apply WAITLIST_DB --remote`, from `apps/web`), then
+`wrangler pages deploy public` to the production branch, then poll the `pages.dev` URL until it
+serves the landing page and print the measured time. A redeploy of an unchanged site is a
+no-op that costs a minute; there is no path filter to get wrong. `workflow_dispatch` with
+`staging` deploys a preview branch of the same project instead. PRs do not deploy the site.
+
+Once, before the first run (Jamie): create the Pages project (`wrangler pages project create
+pennypincher-web --production-branch main`) and the database (`wrangler d1 create
+pennypincher-waitlist`), put the database id in `apps/web/wrangler.toml`, and merge. The
+`CLOUDFLARE_API_TOKEN` repo secret needs Pages Edit as well as Workers and D1 Edit.
+
+Rollback: Pages dashboard > Deployments > previous deployment > Rollback (seconds), or revert +
+merge. The waitlist table is never dropped by a deploy.
+
 ## Staging
 
 Add the `deploy-staging` label to a PR. `deploy.yml` deploys the PR head to

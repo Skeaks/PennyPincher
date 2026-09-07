@@ -7,8 +7,14 @@
  * both sides have one; Walmart never renders its store number, so the human label is the
  * fallback there. When neither side can be matched the result is `store_unknown`, not a
  * comparison.
+ *
+ * Instacart is the exception to the label fallback (S17, Jamie's decision 2026-09-07): its
+ * store label is the banner ("Walmart"), not a location. The anonymous fetch of the milk page
+ * resolved to another Walmart location (a Philadelphia ZIP, not the recorder's) while its DOM
+ * showed only the banner, so a label match there would compare two locations and call the
+ * result a price difference. Instacart pairs need a location id on both sides.
  */
-import type { PriceObservation, StoreRef } from "@pennypincher/schema";
+import type { PriceObservation, Retailer, StoreRef } from "@pennypincher/schema";
 import type { PricePoint, ProbeFailureReason, ProbeVerdict } from "./types";
 
 export type Comparison =
@@ -16,17 +22,30 @@ export type Comparison =
   | { verdict: "STORE_DIFFERS" }
   | { verdict: "UNCHECKED"; reason: Extract<ProbeFailureReason, "store_unknown"> };
 
-/** True / false when the two stores can be matched; undefined when there is nothing to match on. */
-export function sameStore(a: StoreRef | undefined, b: StoreRef | undefined): boolean | undefined {
+/** Retailers whose store label names a location, so two equal labels mean one store. */
+export function labelNamesLocation(retailer: Retailer): boolean {
+  return retailer !== "instacart";
+}
+
+/**
+ * True / false when the two stores can be matched; undefined when there is nothing to match on.
+ * `labelFallback` says whether equal labels count as a match when an id is missing.
+ */
+export function sameStore(
+  a: StoreRef | undefined,
+  b: StoreRef | undefined,
+  labelFallback = true,
+): boolean | undefined {
   if (a?.retailerStoreId !== undefined && b?.retailerStoreId !== undefined) {
     return a.retailerStoreId === b.retailerStoreId;
   }
+  if (!labelFallback) return undefined;
   if (a?.label !== undefined && b?.label !== undefined) return a.label === b.label;
   return undefined;
 }
 
 export function compare(mine: PriceObservation, anon: PriceObservation): Comparison {
-  const same = sameStore(mine.store, anon.store);
+  const same = sameStore(mine.store, anon.store, labelNamesLocation(mine.retailer));
   if (same === undefined) return { verdict: "UNCHECKED", reason: "store_unknown" };
   if (!same) return { verdict: "STORE_DIFFERS" };
   const deltaMinor = mine.facts.price.amountMinor - anon.facts.price.amountMinor;

@@ -170,9 +170,15 @@ describe("the milk page as the probe really receives it (S17)", () => {
    * yet: the same milk page extracted as passive capture would on a signed-in tab. The
    * anonymous side is the real server-rendered HTML the probe fetched, whose header is a
    * skeleton and which shows no Delivery / Pickup control. Before S17 this was
-   * "Could not check" (`no_fulfillment`); now it is a verdict.
+   * "Could not check" (`no_fulfillment`). Now the page parses and the anonymous row is stored;
+   * whether a verdict follows depends on the store rule below.
    */
-  it("produces a verdict, not a failure, and keeps the store in the URL it fetches", async () => {
+  const DETAILS_ID = '<div id="item_details-items_151190-20654983-Details"></div>';
+  /** The page with the location id the rendered (JavaScript) page carries in its details panel. */
+  const withLocation = (html: string, id = DETAILS_ID): string =>
+    html.replace('<div id="item_details">', `<div id="item_details">${id}`);
+
+  it("parses, stores the anonymous row, and keeps the store in the URL it fetches", async () => {
     const mine = ownInstacartObservation(milkAnonymous, URL_MILK, undefined, {
       sessionState: "logged_in",
     });
@@ -183,12 +189,14 @@ describe("the milk page as the probe really receives it (S17)", () => {
     const outcome = await probeObservation(mine, probeDeps({ fetchPage: fetch.fetchPage }));
 
     expect(fetch.calls).toEqual([URL_MILK]);
+    // Neither side shows a location id (the anonymous fetch resolved to another Walmart location
+    // with only the banner in its DOM), so the banner is not enough: store_unknown, not SAME.
     expect(outcome).toMatchObject({
       status: "checked",
       result: {
         key: "instacart:20654983",
-        verdict: "SAME",
-        deltaMinor: 0,
+        verdict: "UNCHECKED",
+        reason: "store_unknown",
         mine: { amountMinor: 495, priceText: "$4.95", storeLabel: "Walmart" },
         anon: {
           amountMinor: 495,
@@ -198,7 +206,6 @@ describe("the milk page as the probe really receives it (S17)", () => {
         },
       },
     });
-    expect((outcome as { result: { reason?: unknown } }).result.reason).toBeUndefined();
 
     const rows = await list();
     expect(rows).toHaveLength(2);
@@ -216,17 +223,66 @@ describe("the milk page as the probe really receives it (S17)", () => {
     expect((await loadProbeState()).stats.instacart).toEqual({
       checks: 1,
       differences: 0,
-      failures: 0,
-      failuresByReason: {},
+      failures: 1,
+      failuresByReason: { store_unknown: 1 },
     });
   });
 
-  it("reports the difference when the anonymous milk page shows another price", async () => {
-    const mine = ownInstacartObservation(milkAnonymous, URL_MILK, undefined, {
-      sessionState: "logged_in",
-    });
+  it("produces a verdict once both sides carry the same location id", async () => {
+    const mine = ownInstacartObservation(
+      { ...milkAnonymous, html: withLocation(milkAnonymous.html) },
+      URL_MILK,
+      undefined,
+      { sessionState: "logged_in" },
+    );
+    expect(mine.store).toEqual({ retailerStoreId: "151190", label: "Walmart" });
     await append(mine);
-    const cheaperAnon = milkAnonymous.html.replace("Current price: $4.95", "Current price: $4.78");
+    const fetch = fakeFetch(withLocation(milkAnonymous.html));
+    const outcome = await probeObservation(mine, probeDeps({ fetchPage: fetch.fetchPage }));
+    expect(outcome).toMatchObject({
+      status: "checked",
+      result: {
+        verdict: "SAME",
+        deltaMinor: 0,
+        anon: { amountMinor: 495, storeId: "151190", storeLabel: "Walmart" },
+      },
+    });
+    expect((outcome as { result: { reason?: unknown } }).result.reason).toBeUndefined();
+  });
+
+  it("another location on the anonymous side is STORE_DIFFERS, whatever the prices", async () => {
+    const mine = ownInstacartObservation(
+      { ...milkAnonymous, html: withLocation(milkAnonymous.html) },
+      URL_MILK,
+      undefined,
+      { sessionState: "logged_in" },
+    );
+    await append(mine);
+    const elsewhere = withLocation(
+      milkAnonymous.html.replace("Current price: $4.95", "Current price: $4.78"),
+      '<div id="item_details-items_2231-20654983-Details"></div>',
+    );
+    const outcome = await probeObservation(
+      mine,
+      probeDeps({ fetchPage: fakeFetch(elsewhere).fetchPage }),
+    );
+    expect(outcome).toMatchObject({
+      status: "checked",
+      result: { verdict: "STORE_DIFFERS", anon: { amountMinor: 478, storeId: "2231" } },
+    });
+  });
+
+  it("reports the difference when the same location's anonymous page shows another price", async () => {
+    const mine = ownInstacartObservation(
+      { ...milkAnonymous, html: withLocation(milkAnonymous.html) },
+      URL_MILK,
+      undefined,
+      { sessionState: "logged_in" },
+    );
+    await append(mine);
+    const cheaperAnon = withLocation(
+      milkAnonymous.html.replace("Current price: $4.95", "Current price: $4.78"),
+    );
     const outcome = await probeObservation(
       mine,
       probeDeps({ fetchPage: fakeFetch(cheaperAnon).fetchPage }),

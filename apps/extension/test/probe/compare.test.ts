@@ -73,6 +73,18 @@ describe("compare on fixture pairs", () => {
     expect(compare(mine, anon)).toEqual({ verdict: "UNCHECKED", reason: "store_unknown" });
   });
 
+  it("Instacart never matches on the label: the banner is not a location (S17)", () => {
+    const mine = ownInstacartObservation(instacartIn, URL_BANANAS);
+    const anon = ownInstacartObservation(instacartOut, URL_BANANAS);
+    anon.store = { label: "Wegmans" };
+    expect(compare(mine, anon)).toEqual({ verdict: "UNCHECKED", reason: "store_unknown" });
+    mine.store = { label: "Wegmans" };
+    expect(compare(mine, anon)).toEqual({ verdict: "UNCHECKED", reason: "store_unknown" });
+    anon.store = { retailerStoreId: "10769", label: "Wegmans" };
+    mine.store = { retailerStoreId: "151190", label: "Wegmans" };
+    expect(compare(mine, anon)).toEqual({ verdict: "STORE_DIFFERS" });
+  });
+
   it("MORE and LESS carry the signed delta (mine minus anonymous)", () => {
     const mine = ownInstacartObservation(instacartIn, URL_BANANAS);
     const anon = ownInstacartObservation(instacartOut, URL_BANANAS);
@@ -94,6 +106,12 @@ describe("sameStore", () => {
     expect(sameStore({ label: "A" }, { label: "A" })).toBe(true);
     expect(sameStore(undefined, { label: "A" })).toBeUndefined();
     expect(sameStore({ retailerStoreId: "1" }, { label: "A" })).toBeUndefined();
+  });
+
+  it("without the label fallback, only ids match", () => {
+    expect(sameStore({ label: "A" }, { label: "A" }, false)).toBeUndefined();
+    expect(sameStore({ retailerStoreId: "1", label: "A" }, { label: "A" }, false)).toBeUndefined();
+    expect(sameStore({ retailerStoreId: "1" }, { retailerStoreId: "1" }, false)).toBe(true);
   });
 });
 

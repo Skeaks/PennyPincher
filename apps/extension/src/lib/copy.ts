@@ -26,13 +26,14 @@ export const CONSENT_COPY = {
   howItWorks: [
     "The extension only reads what your browser already drew on the page. It never signs in, clicks, searches, or navigates for you.",
     "To check whether being signed in changes your price, the extension asks the retailer for the public page of the product you are viewing, the way a visitor who is not signed in would see it: without your cookies, sign-in, or any credentials. It does this at most once per product per hour, and if the retailer tries to send that request somewhere else it stops rather than follow.",
-    "Everything stays on this computer. That page request is the only network request this version makes, and it carries nothing about you.",
+    "Every 15 minutes the records listed above are sent to PennyPincher's own server, under the rotating ID, so they can be pooled with other panelists' records. When you open the extension on a product, it asks that same server how the prices other panelists were shown for that product spread out. Those two requests and the page request above are the only network requests this version makes; none of them carries your cookies, sign-in, or anything that identifies you.",
   ],
   deleteEverything:
-    'You can delete everything at any time. The extension\'s options page has a "Delete my data" ' +
-    'button that removes every record stored on this computer, and an "Export my data" button ' +
-    "that gives you a copy first if you want one. Removing the extension also deletes everything " +
-    "it stored.",
+    "You can delete everything on this computer at any time. The extension's options page has a " +
+    '"Delete my data" button that removes every record stored here, and an "Export my data" ' +
+    "button that gives you a copy first if you want one. Removing the extension also deletes " +
+    "everything it stored. Records already sent to the server carry only the rotating ID; a " +
+    "request to remove them from the server is coming in a later version.",
   optInLabel: "I understand what is collected and what is not, and I agree to take part.",
   acceptButton: "Turn on PennyPincher",
   acceptedTitle: "Thank you",

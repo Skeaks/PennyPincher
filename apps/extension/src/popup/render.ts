@@ -1,8 +1,10 @@
 /**
- * The popup (S06 minimal): "Your price", "Anonymous price", and one of the five verdict lines.
- * The ladder arrives in S11. No claim language anywhere in this file (CLAUDE.md rule 10).
+ * The popup: "Your price", "Anonymous price", one of the five verdict lines (S06), the panel
+ * ladder for the product's cell (S11), and "You contributed N observations this week". No
+ * claim language anywhere in this file (CLAUDE.md rule 10).
  */
 import { browser } from "wxt/browser";
+import { canonicalUrl } from "../capture/adapter";
 import { loadListingTally } from "../capture/tally";
 import { hasConsent } from "../lib/consent";
 import { el, mount } from "../lib/dom";
@@ -10,7 +12,13 @@ import { verdictDetail, verdictText } from "../probe/compare";
 import { loadProbeState } from "../probe/state";
 import type { PricePoint } from "../probe/types";
 import { list } from "../store";
-import { type PopupView, popupView } from "./model";
+import { isConfigured, syncConfigFromEnv } from "../sync/config";
+import { contributedSince, loadSyncState } from "../sync/state";
+import { getCell } from "../sync/transport";
+import { cellKeyOf, contributionText, ladderElement, ladderView } from "./ladder";
+import { type PopupView, latestOwnObservation, popupView } from "./model";
+
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
 function priceRow(label: string, point: PricePoint | undefined): HTMLElement[] {
   const value = point
@@ -76,6 +84,11 @@ export function viewElement(view: PopupView): HTMLElement {
   }
 }
 
+/** The ladder is shown whenever the popup has the user's own price for the page. */
+export function showsLadder(view: PopupView): boolean {
+  return view.kind === "not_signed_in" || view.kind === "pending" || view.kind === "result";
+}
+
 /** The active tab's URL. Available without the `tabs` permission on hosts we have permission for. */
 async function activeTabUrl(): Promise<string | undefined> {
   try {
@@ -86,18 +99,44 @@ async function activeTabUrl(): Promise<string | undefined> {
   }
 }
 
-export async function renderPopup(): Promise<void> {
-  const [consented, tabUrl, observations, probe, listingTally] = await Promise.all([
+export async function renderPopup(now: Date = new Date()): Promise<void> {
+  const [consented, tabUrl, observations, probe, listingTally, sync] = await Promise.all([
     hasConsent(),
     activeTabUrl(),
     list(),
     loadProbeState(),
     loadListingTally(),
+    loadSyncState(),
   ]);
   const view = popupView({ consented, tabUrl, observations, probe, listingTally });
+  const children: Node[] = [el("h1", { text: "PennyPincher" }), viewElement(view)];
+
+  const config = syncConfigFromEnv();
+  const pageUrl = showsLadder(view) && tabUrl !== undefined ? canonicalUrl(tabUrl) : undefined;
+  const mine = pageUrl === undefined ? undefined : latestOwnObservation(observations, pageUrl);
+  let ladder: HTMLElement | undefined;
+  if (mine) {
+    ladder = ladderElement({ kind: isConfigured(config) ? "loading" : "unconfigured" });
+    children.push(ladder);
+  }
+  if (consented) {
+    children.push(
+      el("p", {
+        class: "muted contributed",
+        text: contributionText(contributedSince(sync, now.getTime() - WEEK_MS)),
+      }),
+    );
+  }
+
   const options = el("button", { type: "button", text: "Options" });
   options.addEventListener("click", () => {
     void browser.runtime.openOptionsPage();
   });
-  mount(el("section", {}, [el("h1", { text: "PennyPincher" }), viewElement(view), options]));
+  children.push(options);
+  mount(el("section", {}, children));
+
+  if (mine && ladder && isConfigured(config)) {
+    const fetched = await getCell(config, cellKeyOf(mine));
+    ladder.replaceWith(ladderElement(ladderView(fetched, mine.facts.price.amountMinor)));
+  }
 }

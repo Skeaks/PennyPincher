@@ -12,8 +12,10 @@ import { browser } from "wxt/browser";
  * 2 (S06): the consent copy describes the anonymous logged-out page request.
  * 3 (S17): the copy says prices are also recorded from search, aisle and storefront tiles,
  * not only product pages.
+ * 4 (S11): the copy says the records are uploaded to PennyPincher's own server every
+ * 15 minutes and that the popup asks that server for the product's price ladder.
  */
-export const CONSENT_VERSION = 3;
+export const CONSENT_VERSION = 4;
 export const CONSENT_KEY = "pp:consent";
 
 export interface ConsentRecord {

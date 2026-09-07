@@ -1,13 +1,14 @@
 /**
  * The network posture (ADR 0003, line 2). Exactly two source files in the extension make a
  * network request. The probe's fetch (S06) reads a retailer's public product page with
- * `credentials: "omit"` and never follows a redirect. The sync transport (S11) talks to
+ * `credentials: "omit"` and never follows a redirect. The sync transport (S11, S14) talks to
  * PennyPincher's own API only, at the configured origin, with `credentials: "omit"` and
- * redirects refused. Everything else the S04 posture test forbids stays forbidden.
+ * redirects refused: the upload, the cell query, and the panelist delete. Everything else the S04 posture test forbids stays forbidden.
  *
  * History: the S04 "no network" block of test/posture.test.ts became the one-file pin in
  * PR #16 (Jamie, 2026-09-04); the one-file pin became this two-file pin in PR #31 (Jamie,
- * 2026-09-07) when the upload arrived.
+ * 2026-09-07) when the upload arrived. The transport's call-site count became three in
+ * PR #33 (Jamie, 2026-09-07) when "Delete my data" gained its DELETE request (S14).
  */
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
@@ -47,7 +48,7 @@ describe("network posture after S06", () => {
     expect(text).toMatch(/redirect:\s*"error"/);
     expect(text).toMatch(/cache:\s*"no-store"/);
     // Every URL is built from config.apiBaseUrl; no literal host appears in the file.
-    expect(text.match(/fetch\(`\$\{config\.apiBaseUrl\}/g)).toHaveLength(2);
+    expect(text.match(/fetch\(`\$\{config\.apiBaseUrl\}/g)).toHaveLength(3);
     expect(text).not.toMatch(/https?:\/\//);
     expect(SYNC_FETCH_INIT.credentials).toBe("omit");
     expect(SYNC_FETCH_INIT.redirect).toBe("error");

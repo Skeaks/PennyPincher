@@ -17,8 +17,10 @@ import { browser } from "wxt/browser";
  * 5 (S14): the copy says "Delete my data" asks that server to remove the records sent under
  * this browser's IDs (a third request to it), that the ID rotates every 7 days, and that the
  * server keeps a record for 90 days.
+ * 6 (S15): the copy enumerates every request in one list, including the daily adapter
+ * health upload (counts only, no ids) that S12 added and version 5 did not mention.
  */
-export const CONSENT_VERSION = 5;
+export const CONSENT_VERSION = 6;
 export const CONSENT_KEY = "pp:consent";
 
 export interface ConsentRecord {

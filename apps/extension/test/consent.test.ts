@@ -1,5 +1,8 @@
+import { readFileSync, readdirSync, statSync } from "node:fs";
+import { join, relative } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import { fakeBrowser } from "wxt/testing/fake-browser";
+import { CONSENT_COPY, NETWORK_REQUESTS, OPTIONS_COPY } from "../src/copy/strings";
 import { CONSENT_PAGE, promptForConsentIfNeeded, registerLifecycle } from "../src/lib/bootstrap";
 import {
   CONSENT_KEY,
@@ -11,9 +14,12 @@ import {
   requireConsent,
   revokeConsent,
 } from "../src/lib/consent";
-import { CONSENT_COPY } from "../src/lib/copy";
+import { CONSENT_COPY as LEGACY_PATH_COPY } from "../src/lib/copy";
 import { append, count } from "../src/store";
 import { validObservation } from "./fixtures";
+
+/** CLAUDE.md rule 10's words. Used by the copy tests below and the whole-tree scan at the end. */
+const REGULATED = /\b(save|saves|saving|savings|cheapest|cheaper|lowest price|guarantee[sd]?)\b/i;
 
 beforeEach(() => {
   fakeBrowser.reset();
@@ -161,8 +167,174 @@ describe("consent copy", () => {
   });
 
   it("uses no regulated claim words", () => {
-    expect(all).not.toMatch(
-      /\b(save|saves|saving|savings|cheapest|cheaper|lowest price|guarantee[sd]?)\b/i,
-    );
+    expect(all).not.toMatch(REGULATED);
   });
+
+  it("is still reachable at the S04 import path", () => {
+    expect(LEGACY_PATH_COPY).toBe(CONSENT_COPY);
+  });
+});
+
+/**
+ * S15: the copy enumerates every request the extension makes, and the test fails when the
+ * sync transport gains a request the copy does not describe (or the copy describes one the
+ * transport no longer makes). The consent page lists them one per line; the options page's
+ * "Sent anywhere" paragraph carries the same list.
+ */
+const SRC = join(__dirname, "..", "src");
+const TRANSPORT_FILE = "sync/transport.ts";
+const PROBE_FETCH_FILE = "probe/fetch.ts";
+
+function readSource(rel: string): string {
+  return readFileSync(join(SRC, rel), "utf8");
+}
+
+/** The source with block and line comments removed, so a path in a doc comment does not count. */
+function stripComments(text: string): string {
+  return text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+}
+
+/** Every distinct `/v1/<segment>` path the transport requests, from its code, not its comments. */
+function transportPaths(): string[] {
+  const code = stripComments(readSource(TRANSPORT_FILE));
+  return [...new Set(code.match(/\/v1\/[a-z-]+\/?/g) ?? [])].sort();
+}
+
+describe("consent copy enumerates every request (S15)", () => {
+  const apiRequests = NETWORK_REQUESTS.filter((r) => r.to === "api");
+  const retailerRequests = NETWORK_REQUESTS.filter((r) => r.to === "retailer");
+
+  it("the transport requests exactly the API paths the copy lists, and no others", () => {
+    const declared = apiRequests.map((r) => r.path).sort();
+    const found = transportPaths();
+    expect(found.length).toBeGreaterThanOrEqual(4);
+    expect(found).toEqual(declared);
+  });
+
+  it("the transport's request helpers each carry a path from the list", () => {
+    // A `fetch(` or `postJson(` call site that builds its URL from anything but a listed
+    // path is a request the copy does not describe.
+    const code = stripComments(readSource(TRANSPORT_FILE));
+    const callSites = code.match(/\b(fetch|postJson)\s*\((?!\s*config: SyncConfig)[^;]*?;/g) ?? [];
+    expect(callSites.length).toBeGreaterThanOrEqual(apiRequests.length);
+    const nonHelper = callSites.filter(
+      (site) => !/^fetch\(`\$\{config\.apiBaseUrl\}\$\{path\}`/.test(site),
+    );
+    for (const site of nonHelper) {
+      expect(apiRequests.some((r) => r.path !== null && site.includes(r.path))).toBe(true);
+    }
+  });
+
+  it("the retailer request is the probe's one fetch, and it is listed once", () => {
+    expect(retailerRequests).toHaveLength(1);
+    const probe = stripComments(readSource(PROBE_FETCH_FILE));
+    expect(probe.match(/\bfetch\s*\(/g)).toHaveLength(1);
+  });
+
+  it("every request has a consent sentence and an options clause, in that order", () => {
+    const how = CONSENT_COPY.howItWorks.join("\n");
+    const sent = OPTIONS_COPY.sentAnywhere;
+    let lastHow = -1;
+    let lastSent = -1;
+    for (const r of NETWORK_REQUESTS) {
+      expect(r.copy.length).toBeGreaterThan(40);
+      expect(r.short.length).toBeGreaterThan(20);
+      const atHow = how.indexOf(r.copy);
+      const atSent = sent.indexOf(r.short);
+      expect(atHow).toBeGreaterThan(lastHow);
+      expect(atSent).toBeGreaterThan(lastSent);
+      lastHow = atHow;
+      lastSent = atSent;
+    }
+    expect(how).toMatch(
+      new RegExp(`Request ${NETWORK_REQUESTS.length} of ${NETWORK_REQUESTS.length}`),
+    );
+    expect(sent).toMatch(new RegExp(`\\(${NETWORK_REQUESTS.length}\\)`));
+  });
+
+  it("names the daily health upload as counts only, with no ids", () => {
+    const health = NETWORK_REQUESTS.find((r) => r.path === "/v1/adapter-health");
+    expect(health?.copy).toMatch(/once a day/i);
+    expect(health?.copy).toMatch(/counts only/i);
+    expect(health?.copy).toMatch(/no ID/);
+  });
+
+  it("names the ladder query and the delete call", () => {
+    const how = CONSENT_COPY.howItWorks.join(" ");
+    expect(how).toMatch(/when you open the extension on a product/i);
+    expect(how).toMatch(/"Delete my data"/);
+    expect(how).toMatch(/every 15 minutes/i);
+    expect(how).toMatch(/every 7 days/i);
+    expect(how).toMatch(/90 days/);
+  });
+
+  it("is consent version 6 or later, so version 5 users are re-asked", () => {
+    expect(CONSENT_VERSION).toBeGreaterThanOrEqual(6);
+  });
+
+  it("the options page's paragraph uses no regulated claim words either", () => {
+    expect(
+      Object.values(OPTIONS_COPY)
+        .filter((v) => typeof v === "string")
+        .join(" "),
+    ).not.toMatch(REGULATED);
+  });
+});
+
+/**
+ * S15: CLAUDE.md rule 10. No user-facing string anywhere in the extension may contain a
+ * regulated claim word unless the line before it is exactly `// claims-reviewed`, the marker
+ * Jamie adds together with the PR label of the same name. The copy file is scanned whole
+ * (comments included); every other source file is scanned for string literals only, so an
+ * identifier like `save` in code is not a claim.
+ */
+const MARKER = /^\s*\/\/ claims-reviewed\s*$/;
+const STRING_LITERAL = /"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'|`(?:[^`\\]|\\.)*`/g;
+
+function walk(dir: string): string[] {
+  return readdirSync(dir).flatMap((name) => {
+    const full = join(dir, name);
+    return statSync(full).isDirectory() ? walk(full) : [full];
+  });
+}
+
+const SOURCE_FILES = walk(SRC)
+  .filter((f) => /\.(ts|html)$/.test(f))
+  .map((f) => ({ rel: relative(SRC, f).replace(/\\/g, "/"), text: readFileSync(f, "utf8") }));
+
+/** Lines (1-based) that carry a regulated word without a marker line right above them. */
+function unreviewedLines(text: string, wholeLine: boolean): number[] {
+  const lines = text.split("\n");
+  const hits: number[] = [];
+  lines.forEach((line, i) => {
+    const subject = wholeLine ? line : (line.match(STRING_LITERAL) ?? []).join(" ");
+    if (!REGULATED.test(subject)) return;
+    if (i > 0 && MARKER.test(lines[i - 1] ?? "")) return;
+    hits.push(i + 1);
+  });
+  return hits;
+}
+
+describe("regulated claim words (CLAUDE.md rule 10)", () => {
+  it("scans a non-empty source tree that includes the copy file", () => {
+    expect(SOURCE_FILES.length).toBeGreaterThan(10);
+    expect(SOURCE_FILES.some((f) => f.rel === "copy/strings.ts")).toBe(true);
+  });
+
+  it("the marker exempts exactly the line after it", () => {
+    expect(unreviewedLines('// claims-reviewed\nconst a = "you could save";', false)).toEqual([]);
+    expect(unreviewedLines('const a = "you could save";', false)).toEqual([1]);
+    expect(unreviewedLines('// claims-reviewed\n\nconst a = "you could save";', false)).toEqual([
+      3,
+    ]);
+    expect(unreviewedLines("const save = 1;", false)).toEqual([]);
+    expect(unreviewedLines("// we save nothing", true)).toEqual([1]);
+  });
+
+  for (const file of SOURCE_FILES) {
+    it(`${file.rel} has no regulated word without a claims-reviewed marker`, () => {
+      const wholeLine = file.rel.startsWith("copy/");
+      expect(unreviewedLines(file.text, wholeLine)).toEqual([]);
+    });
+  }
 });

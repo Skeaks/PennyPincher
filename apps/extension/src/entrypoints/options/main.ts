@@ -1,4 +1,5 @@
 import { browser } from "wxt/browser";
+import { OPTIONS_COPY as C } from "../../copy/strings";
 import { deleteMyData, deleteOutcomeText } from "../../identity/delete";
 import { CONSENT_PAGE } from "../../lib/bootstrap";
 import { CONSENT_VERSION, getConsent, hasConsent, revokeConsent } from "../../lib/consent";
@@ -31,11 +32,9 @@ function consentStatusText(
   consented: boolean,
   record: { version: number; acceptedAt: string } | null,
 ) {
-  if (consented && record) return `Given on ${record.acceptedAt.slice(0, 10)}.`;
-  if (record) {
-    return `Given for an earlier version (${record.version}); version ${CONSENT_VERSION} needs your review. The extension is off.`;
-  }
-  return "Not given. The extension is off.";
+  if (consented && record) return C.consentGiven(record.acceptedAt.slice(0, 10));
+  if (record) return C.consentStale(record.version, CONSENT_VERSION);
+  return C.consentNone;
 }
 
 async function render(notice?: string): Promise<void> {
@@ -46,12 +45,12 @@ async function render(notice?: string): Promise<void> {
     loadProbeState(),
   ]);
 
-  const reviewButton = el("button", { type: "button", text: "Review consent" });
+  const reviewButton = el("button", { type: "button", text: C.reviewButton });
   reviewButton.addEventListener("click", () => {
     window.location.assign(browser.runtime.getURL(CONSENT_PAGE));
   });
 
-  const exportButton = el("button", { type: "button", text: "Export my data" });
+  const exportButton = el("button", { type: "button", text: C.exportButton });
   exportButton.addEventListener("click", () => {
     void downloadExport();
   });
@@ -59,20 +58,20 @@ async function render(notice?: string): Promise<void> {
   const deleteButton = el("button", {
     type: "button",
     class: "danger",
-    text: "Delete my data",
+    text: C.deleteButton,
   }) as HTMLButtonElement;
   deleteButton.addEventListener("click", () => {
     deleteButton.disabled = true;
     void deleteMyData().then(
       (outcome) => render(deleteOutcomeText(outcome)),
-      () => render("Something went wrong and nothing was removed. Try again."),
+      () => render(C.deleteUnexpected),
     );
   });
 
   const withdrawButton = el("button", {
     type: "button",
     class: "danger",
-    text: "Withdraw consent",
+    text: C.withdrawButton,
   }) as HTMLButtonElement;
   withdrawButton.disabled = record === null;
   withdrawButton.addEventListener("click", () => {
@@ -81,30 +80,21 @@ async function render(notice?: string): Promise<void> {
 
   mount(
     el("section", {}, [
-      el("h1", { text: "PennyPincher" }),
+      el("h1", { text: C.title }),
       el("dl", {}, [
-        el("dt", { text: "Consent" }),
+        el("dt", { text: C.consentLabel }),
         el("dd", { id: "consent-status", text: consentStatusText(consented, record) }),
-        el("dt", { text: "Stored on this computer" }),
-        el("dd", { id: "row-count", text: `${rows} price observation${rows === 1 ? "" : "s"}` }),
-        el("dt", { text: "Sent anywhere" }),
-        el("dd", {
-          text:
-            "Nothing about you. To compare prices, the extension requests the public page of " +
-            "the product you are viewing, without your sign-in, at most once an hour per product.",
-        }),
+        el("dt", { text: C.storedLabel }),
+        el("dd", { id: "row-count", text: C.storedRows(rows) }),
+        el("dt", { text: C.sentLabel }),
+        el("dd", { id: "sent-anywhere", text: C.sentAnywhere }),
       ]),
       el("div", { class: "row" }, [reviewButton, exportButton]),
-      el("h2", { text: "Anonymous price checks" }),
-      el("p", {
-        class: "muted",
-        text: "Per retailer: checks run, price differences found, and checks that produced no anonymous price.",
-      }),
+      el("h2", { text: C.probesTitle }),
+      el("p", { class: "muted", text: C.probesIntro }),
       probeSummaryElement(probes),
-      el("h2", { text: "Delete" }),
-      el("p", {
-        text: "Delete my data asks PennyPincher's server to remove every record sent under any ID this browser has used, then removes every observation and price check stored on this computer. Withdraw consent turns the extension off until you agree again.",
-      }),
+      el("h2", { text: C.deleteTitle }),
+      el("p", { text: C.deleteIntro }),
       el("div", { class: "row" }, [deleteButton, withdrawButton]),
       ...(notice ? [el("p", { id: "delete-notice", class: "muted", text: notice })] : []),
     ]),

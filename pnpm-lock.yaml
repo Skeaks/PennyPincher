@@ -74,6 +74,21 @@ importers:
         specifier: 3.0.5
         version: 3.0.5(@types/node@22.10.5)(happy-dom@15.11.7)(jiti@2.7.0)(tsx@4.19.2)
 
+  apps/web:
+    devDependencies:
+      '@cloudflare/workers-types':
+        specifier: 5.20260904.1
+        version: 5.20260904.1
+      typescript:
+        specifier: 5.7.3
+        version: 5.7.3
+      vitest:
+        specifier: 3.0.5
+        version: 3.0.5(@types/node@22.10.5)(happy-dom@15.11.7)(jiti@2.7.0)(tsx@4.19.2)
+      wrangler:
+        specifier: 4.129.0
+        version: 4.129.0(@cloudflare/workers-types@5.20260904.1)
+
   packages/schema:
     dependencies:
       zod:

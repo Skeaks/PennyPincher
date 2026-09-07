@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PennyPincher</title>
+    <meta
+      name="description"
+      content="A consented panel of shoppers that shows you where the price you were shown sits among the prices everyone else was shown. Pilot waitlist."
+    />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="page">
+      <header>
+        <p class="eyebrow">PennyPincher · closed pilot</p>
+        <h1>The price you see is not the price. It is one of several.</h1>
+        <p class="lede">
+          Retailers run price experiments: the same item, the same store, the same minute,
+          different prices for different shoppers. No one shopper can see that. A panel can.
+          PennyPincher is a browser extension and a consented panel that, together, show you
+          where the price you were shown sits.
+        </p>
+        <p><a class="button" href="#join">Join the pilot waitlist</a></p>
+      </header>
+
+      <section>
+        <h2>The panel</h2>
+        <p>
+          The extension records the price your browser already drew on the page while you shop
+          on a supported retailer. It does not sign in, click, search, or navigate for you. It
+          reads what you were shown, and nothing else.
+        </p>
+        <p>
+          Every panelist's records are pooled on our server under a random ID that changes every
+          7 days. For each product, store, and delivery option, the pool is turned into a
+          ladder: the distinct prices shoppers were shown, how many saw each one, and where yours
+          sits. You see the ladder in the extension's popup, with the number of observers it
+          rests on.
+        </p>
+      </section>
+
+      <section>
+        <h2>The lever probe</h2>
+        <p>
+          Some questions do not need a panel. Is being signed in changing your price right now?
+          The extension asks the retailer for the public page of the product you are viewing,
+          the way a visitor who is not signed in would see it, without your cookies or sign-in,
+          at most once an hour per product. Then it puts the two prices side by side. That works
+          on day one, with no other panelists at all.
+        </p>
+      </section>
+
+      <section>
+        <h2>When we do not know, we say so</h2>
+        <p>
+          A ladder built on too few observers is a guess, and a guess presented as a floor is
+          worse than no answer. When the panel has not seen enough of a product to be sure, the
+          popup says <code>UNRESOLVED</code>, shows how many more observers it needs, and shows
+          nothing else. No estimate is ever shown without the number of observers behind it, and
+          no number on this site or in the extension is a promise about what you will pay.
+        </p>
+      </section>
+
+      <section>
+        <h2>What it never does</h2>
+        <ul>
+          <li>Never reads your retailer password, sign-in session, cookies, or payment details.</li>
+          <li>Never records your name, email, phone number, street address, full ZIP code, IP address, or browser fingerprint.</li>
+          <li>Never records anything on sites other than the supported retailers, or on pages that are not product, search, aisle, or storefront pages.</li>
+          <li>Never sends anything until you have read and agreed to a consent screen that lists every field and every request.</li>
+        </ul>
+        <p>
+          The full text, including every field stored, how long it is kept, and how to delete it:
+          <a href="https://github.com/Skeaks/PennyPincher/blob/main/docs/compliance/privacy-policy.md">privacy policy</a>
+          and
+          <a href="https://github.com/Skeaks/PennyPincher/blob/main/docs/compliance/consent.md">what you consent to</a>.
+          Both are drafts under review during the pilot.
+        </p>
+      </section>
+
+      <section id="join">
+        <h2>Join the pilot waitlist</h2>
+        <p>
+          The pilot is small: a few dozen shoppers, one metro area, one retailer to start. We
+          will email invitations in the order people joined.
+        </p>
+        <form method="post" action="/api/waitlist" class="waitlist">
+          <label for="email">Email address</label>
+          <div class="row">
+            <input type="email" name="email" id="email" required autocomplete="email" maxlength="254" placeholder="you@example.com" />
+            <button type="submit">Join the waitlist</button>
+          </div>
+          <p class="trap" aria-hidden="true">
+            <label for="website">Leave this field empty</label>
+            <input type="text" name="website" id="website" tabindex="-1" autocomplete="off" />
+          </p>
+          <p class="muted" id="invalid-note" hidden>
+            That does not look like an email address. Please check it and try again.
+          </p>
+          <p class="muted">
+            This form stores your email address and the time you joined, in a table that holds
+            nothing else and is separate from the panel's data. It is used only to send pilot
+            invitations. Reply to any message from us to be removed at any time.
+          </p>
+        </form>
+      </section>
+
+      <footer>
+        <p class="muted">
+          PennyPincher is open source:
+          <a href="https://github.com/Skeaks/PennyPincher">github.com/Skeaks/PennyPincher</a>.
+          No affiliate links, no ranking by commission, no "up to X%" claims.
+        </p>
+      </footer>
+    </main>
+    <script>
+      // Progressive: the function sends an invalid address back to "/?email=invalid#join".
+      if (new URLSearchParams(location.search).get("email") === "invalid") {
+        document.getElementById("invalid-note").hidden = false;
+      }
+    </script>
+  </body>
+</html>

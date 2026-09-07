@@ -1,0 +1,21 @@
+{
+  "retailer": "walmart",
+  "capturedAt": "2026-09-07T19:08:00Z",
+  "fulfillment": "pickup",
+  "sessionState": "logged_in",
+  "zip3": "085",
+  "store": {
+    "retailerStoreId": "3266",
+    "label": "East Windsor Supercenter"
+  },
+  "expected": {
+    "price": {
+      "amountMinor": 247,
+      "currency": "USD"
+    },
+    "priceText": "$2.47",
+    "title": "Great Value Sliced Bananas, 16 oz Bag",
+    "retailerSku": "14336395"
+  },
+  "notes": "Search results for \"banana\" (S12), URL /search?q=banana, logged in, East Windsor Supercenter in the header. Not a product page: two [data-testid=item-stack] sections holding 40 [data-item-id] tiles (data-item-id is an opaque id; the SKU is in the a[href^=/ip/] link). Each tile prices in [data-testid=unified-global-product-price] whose aria-label reads \"Price $ 0.06 each (est.) 16.0 ¢/lb Final cost by weight\" (the visible digits are split across spans, so \"$0.06\" never appears as text), titles in [data-automation-id=product-title], and carries [data-testid=badgeTagComponent] badges including the \"Delivery as soon as …\" / \"Pickup as soon as …\" / \"Shipping, arrives …\" lines. Five tiles show a reduced price (ugpp-reduced-price with ugpp-was-price), six a range. No fulfilment radios on a listing; the store label is in the header's fulfillment-banner. 16 more [data-item-id] tiles sit in related-item carousels outside the stacks. `expected` is the frozen sliced bananas tile, whose unit price \"$2.47/lb\" carries the price text. Store id 3266 is from the capture log, never on the page. Recorded by the S12 session from Jamie's Chrome tab with Jamie's permission, stripped in-page the way tools/scrub strips, then scrubbed with --name."
+}

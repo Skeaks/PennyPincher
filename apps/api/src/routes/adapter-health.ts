@@ -1,0 +1,355 @@
+/**
+ * Adapter health (S12). The extension counts, per adapter, how many captures it attempted,
+ * how many yielded an observation and how many failed by reason, and posts the counts once a
+ * day. This is how a retailer's DOM change that silently broke capture gets noticed.
+ *
+ *   POST /v1/adapter-health  -> 201 { stored } | 400 { errors } | 401 { errors: ["unauthorized"] }
+ *   GET  /v1/adapter-health  -> 200 { adapter, date, attempted, extracted, failed }[]
+ *
+ * The POST body carries the client version, the adapter name and version, the counts and a
+ * UTC date. Nothing else is accepted: no observation data, no ids, no URLs. The GET sums the
+ * rows of the last HEALTH_DAYS days per adapter (`name@version`, so a bad release stands
+ * apart from the one before it) and per date.
+ *
+ * The repo interface, the memory repo and the SQL live here; the D1 class is in
+ * `repo/adapter-health-d1.ts` because it needs the Workers `D1Database` global, which the
+ * extension's type-check (it imports `app.ts` for its tests since S14) does not have.
+ */
+import type { Context, Hono } from "hono";
+
+/** How many days back the GET reports, today included. */
+export const HEALTH_DAYS = 7;
+
+const MAX_ADAPTERS = 20;
+const MAX_REASONS = 16;
+const MAX_NAME = 32;
+const MAX_VERSION = 32;
+const MAX_COUNT = 1_000_000_000;
+const DATE = /^\d{4}-\d{2}-\d{2}$/;
+const NAME = /^[a-z][a-z0-9_-]*$/;
+const VERSION = /^[A-Za-z0-9.+-]+$/;
+const REASON = /^[a-z][a-z0-9_]*$/;
+
+/** One adapter's line as the extension sends it. */
+export interface AdapterHealthEntry {
+  adapter: string;
+  version: string;
+  attempted: number;
+  extracted: number;
+  failed: Record<string, number>;
+}
+
+export interface AdapterHealthReport {
+  clientVersion: string;
+  date: string;
+  adapters: AdapterHealthEntry[];
+}
+
+/** One stored row: one adapter, one client, one report. */
+export interface AdapterHealthRow {
+  /** `name@version`. */
+  adapter: string;
+  clientVersion: string;
+  /** UTC calendar date the client reported, `YYYY-MM-DD`. */
+  date: string;
+  attempted: number;
+  extracted: number;
+  failed: Record<string, number>;
+  receivedAt: string;
+}
+
+/** What the GET returns: one line per adapter per date. */
+export interface AdapterHealthSummary {
+  adapter: string;
+  date: string;
+  attempted: number;
+  extracted: number;
+  failed: Record<string, number>;
+}
+
+export interface AdapterHealthRepo {
+  insertMany(rows: AdapterHealthRow[]): Promise<void>;
+  /** Every row with `date >= since` (inclusive), any order. */
+  listSince(since: string): Promise<AdapterHealthRow[]>;
+}
+
+// ---------------------------------------------------------------------------------------------
+// Validation. Hand-rolled: the shape is five fields and the API keeps zod inside the schema
+// package.
+// ---------------------------------------------------------------------------------------------
+
+export type ParseReport =
+  | { ok: true; report: AdapterHealthReport }
+  | { ok: false; errors: string[] };
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isCount(value: unknown): value is number {
+  return typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= MAX_COUNT;
+}
+
+function onlyKeys(value: Record<string, unknown>, allowed: string[], where: string): string[] {
+  const extra = Object.keys(value).filter((k) => !allowed.includes(k));
+  return extra.map((k) => `${where}: unexpected key "${k}"`);
+}
+
+function parseEntry(
+  value: unknown,
+  where: string,
+): { entry?: AdapterHealthEntry; errors: string[] } {
+  if (!isRecord(value)) return { errors: [`${where}: must be an object`] };
+  const errors = onlyKeys(value, ["adapter", "version", "attempted", "extracted", "failed"], where);
+  const { adapter, version, attempted, extracted, failed } = value;
+  if (typeof adapter !== "string" || adapter.length > MAX_NAME || !NAME.test(adapter)) {
+    errors.push(`${where}.adapter: must be a short lower-case name`);
+  }
+  if (typeof version !== "string" || version.length === 0 || version.length > MAX_VERSION) {
+    errors.push(`${where}.version: must be a non-empty string`);
+  } else if (!VERSION.test(version)) {
+    errors.push(`${where}.version: must be a version string`);
+  }
+  if (!isCount(attempted)) errors.push(`${where}.attempted: must be a non-negative integer`);
+  if (!isCount(extracted)) errors.push(`${where}.extracted: must be a non-negative integer`);
+  const reasons: Record<string, number> = {};
+  if (!isRecord(failed)) {
+    errors.push(`${where}.failed: must be an object of counts by reason`);
+  } else {
+    const keys = Object.keys(failed);
+    if (keys.length > MAX_REASONS) errors.push(`${where}.failed: at most ${MAX_REASONS} reasons`);
+    for (const key of keys) {
+      const n = failed[key];
+      if (key.length > MAX_NAME || !REASON.test(key)) {
+        errors.push(`${where}.failed: "${key}" is not a reason`);
+      } else if (!isCount(n)) {
+        errors.push(`${where}.failed.${key}: must be a non-negative integer`);
+      } else {
+        reasons[key] = n;
+      }
+    }
+  }
+  if (errors.length > 0) return { errors };
+  return {
+    entry: {
+      adapter: adapter as string,
+      version: version as string,
+      attempted: attempted as number,
+      extracted: extracted as number,
+      failed: reasons,
+    },
+    errors,
+  };
+}
+
+export function parseAdapterHealthReport(body: unknown): ParseReport {
+  if (!isRecord(body)) return { ok: false, errors: ["body must be a JSON object"] };
+  const errors = onlyKeys(body, ["clientVersion", "date", "adapters"], "body");
+  const { clientVersion, date, adapters } = body;
+  if (
+    typeof clientVersion !== "string" ||
+    clientVersion.length === 0 ||
+    clientVersion.length > MAX_VERSION ||
+    !VERSION.test(clientVersion)
+  ) {
+    errors.push("clientVersion: must be a version string");
+  }
+  if (
+    typeof date !== "string" ||
+    !DATE.test(date) ||
+    Number.isNaN(Date.parse(`${date}T00:00:00Z`))
+  ) {
+    errors.push("date: must be a UTC calendar date, YYYY-MM-DD");
+  }
+  const entries: AdapterHealthEntry[] = [];
+  if (!Array.isArray(adapters)) {
+    errors.push("adapters: must be an array");
+  } else if (adapters.length === 0 || adapters.length > MAX_ADAPTERS) {
+    errors.push(`adapters: must have 1 to ${MAX_ADAPTERS} entries`);
+  } else {
+    adapters.forEach((value, i) => {
+      const parsed = parseEntry(value, `adapters[${i}]`);
+      errors.push(...parsed.errors);
+      if (parsed.entry) entries.push(parsed.entry);
+    });
+  }
+  if (errors.length > 0) return { ok: false, errors };
+  return {
+    ok: true,
+    report: { clientVersion: clientVersion as string, date: date as string, adapters: entries },
+  };
+}
+
+// ---------------------------------------------------------------------------------------------
+// Rows and the summary.
+// ---------------------------------------------------------------------------------------------
+
+export function toRows(report: AdapterHealthReport, receivedAt: string): AdapterHealthRow[] {
+  return report.adapters.map((entry) => ({
+    adapter: `${entry.adapter}@${entry.version}`,
+    clientVersion: report.clientVersion,
+    date: report.date,
+    attempted: entry.attempted,
+    extracted: entry.extracted,
+    failed: { ...entry.failed },
+    receivedAt,
+  }));
+}
+
+/** The first date the GET includes: `now` minus HEALTH_DAYS - 1 days, UTC. */
+export function sinceDate(now: Date, days = HEALTH_DAYS): string {
+  const start = new Date(now.getTime() - (days - 1) * 86_400_000);
+  return start.toISOString().slice(0, 10);
+}
+
+/** Pure: rows summed per adapter and date, rows before `since` dropped, sorted for reading. */
+export function summarize(
+  rows: readonly AdapterHealthRow[],
+  since: string,
+): AdapterHealthSummary[] {
+  const byKey = new Map<string, AdapterHealthSummary>();
+  for (const row of rows) {
+    if (row.date < since) continue;
+    const key = `${row.adapter}|${row.date}`;
+    const line = byKey.get(key) ?? {
+      adapter: row.adapter,
+      date: row.date,
+      attempted: 0,
+      extracted: 0,
+      failed: {},
+    };
+    line.attempted += row.attempted;
+    line.extracted += row.extracted;
+    for (const [reason, n] of Object.entries(row.failed)) {
+      line.failed[reason] = (line.failed[reason] ?? 0) + n;
+    }
+    byKey.set(key, line);
+  }
+  return [...byKey.values()].sort(
+    (a, b) => a.adapter.localeCompare(b.adapter) || a.date.localeCompare(b.date),
+  );
+}
+
+// ---------------------------------------------------------------------------------------------
+// Repos.
+// ---------------------------------------------------------------------------------------------
+
+/** In-memory repo for tests. */
+export class MemoryAdapterHealthRepo implements AdapterHealthRepo {
+  readonly rows: AdapterHealthRow[] = [];
+
+  async insertMany(rows: AdapterHealthRow[]): Promise<void> {
+    this.rows.push(...rows.map((r) => ({ ...r, failed: { ...r.failed } })));
+  }
+
+  async listSince(since: string): Promise<AdapterHealthRow[]> {
+    return this.rows.filter((r) => r.date >= since).map((r) => ({ ...r, failed: { ...r.failed } }));
+  }
+}
+
+/** Column order for the INSERT. Must match migrations/0002_adapter_health.sql (a test checks). */
+export const ADAPTER_HEALTH_COLUMNS: readonly string[] = [
+  "adapter",
+  "client_version",
+  "date",
+  "attempted",
+  "extracted",
+  "failed_json",
+  "received_at",
+];
+
+const PLACEHOLDERS = ADAPTER_HEALTH_COLUMNS.map((_, i) => `?${i + 1}`).join(", ");
+
+export const INSERT_HEALTH_SQL = `INSERT INTO adapter_health (${ADAPTER_HEALTH_COLUMNS.join(", ")}) VALUES (${PLACEHOLDERS})`;
+
+export const SELECT_HEALTH_SINCE_SQL = `SELECT ${ADAPTER_HEALTH_COLUMNS.join(", ")} FROM adapter_health WHERE date >= ?1 ORDER BY date, adapter`;
+
+/** The shape D1 hands back for SELECT_HEALTH_SINCE_SQL. */
+export interface HealthRecord {
+  adapter: string;
+  client_version: string;
+  date: string;
+  attempted: number;
+  extracted: number;
+  failed_json: string;
+  received_at: string;
+}
+
+export function healthBindingsFor(row: AdapterHealthRow): (string | number)[] {
+  return [
+    row.adapter,
+    row.clientVersion,
+    row.date,
+    row.attempted,
+    row.extracted,
+    JSON.stringify(row.failed),
+    row.receivedAt,
+  ];
+}
+
+function failedFromJson(text: string): Record<string, number> {
+  try {
+    const parsed: unknown = JSON.parse(text);
+    if (!isRecord(parsed)) return {};
+    const out: Record<string, number> = {};
+    for (const [k, v] of Object.entries(parsed)) if (isCount(v)) out[k] = v;
+    return out;
+  } catch {
+    return {};
+  }
+}
+
+export function fromHealthRecord(d: HealthRecord): AdapterHealthRow {
+  return {
+    adapter: d.adapter,
+    clientVersion: d.client_version,
+    date: d.date,
+    attempted: d.attempted,
+    extracted: d.extracted,
+    failed: failedFromJson(d.failed_json),
+    receivedAt: d.received_at,
+  };
+}
+
+// ---------------------------------------------------------------------------------------------
+// Routes.
+// ---------------------------------------------------------------------------------------------
+
+export interface AdapterHealthDeps<E extends object> {
+  repo: (env: E) => AdapterHealthRepo;
+  now: () => Date;
+  /** The 401 response when the caller may not, undefined when it may. Shared with ingest. */
+  denied: (c: Context<{ Bindings: E }>) => Response | undefined;
+}
+
+export function registerAdapterHealthRoutes<E extends object>(
+  app: Hono<{ Bindings: E }>,
+  deps: AdapterHealthDeps<E>,
+) {
+  app.post("/v1/adapter-health", async (c) => {
+    const unauthorized = deps.denied(c);
+    if (unauthorized) return unauthorized;
+
+    let body: unknown;
+    try {
+      body = await c.req.json();
+    } catch {
+      return c.json({ errors: ["body must be a JSON adapter health report"] }, 400);
+    }
+    const parsed = parseAdapterHealthReport(body);
+    if (!parsed.ok) return c.json({ errors: parsed.errors }, 400);
+
+    const rows = toRows(parsed.report, deps.now().toISOString());
+    await deps.repo(c.env).insertMany(rows);
+    return c.json({ stored: rows.length }, 201);
+  });
+
+  app.get("/v1/adapter-health", async (c) => {
+    const unauthorized = deps.denied(c);
+    if (unauthorized) return unauthorized;
+
+    const since = sinceDate(deps.now());
+    const rows = await deps.repo(c.env).listSince(since);
+    return c.json(summarize(rows, since), 200);
+  });
+}

@@ -1,5 +1,6 @@
 import { createApp } from "./app";
 import type { Env } from "./env";
+import { D1AdapterHealthRepo } from "./repo/adapter-health-d1";
 import { D1ObservationRepo } from "./repo/d1";
 import { runRetention } from "./retention";
 
@@ -10,6 +11,7 @@ const app = createApp<Env>({
   pilotToken: (env) => env.PILOT_TOKEN,
   // The Workers cache API: GET /v1/cells answers live here for CELL_CACHE_SECONDS.
   cache: () => caches.default,
+  adapterHealth: (env) => new D1AdapterHealthRepo(env.DB),
 });
 
 export default {

@@ -1,8 +1,11 @@
 /** Every adapter the extension ships, and the one guard that makes "adapters never throw" true. */
 import type { Adapter, ExtractResult, PageContext } from "./adapter";
 import { instacartAdapter } from "./adapters/instacart";
+import { targetAdapter } from "./adapters/target";
+import { walmartAdapter } from "./adapters/walmart";
 
-export const ADAPTERS: readonly Adapter[] = [instacartAdapter];
+/** In `matches` order. The hosts are disjoint, so the order never decides a page. */
+export const ADAPTERS: readonly Adapter[] = [instacartAdapter, targetAdapter, walmartAdapter];
 
 /** The first adapter whose `matches(url)` is true, or undefined. `matches` itself never throws. */
 export function findAdapter(

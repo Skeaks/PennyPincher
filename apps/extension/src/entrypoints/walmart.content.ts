@@ -1,10 +1,9 @@
 /**
- * Instacart content script. Runs on every instacart.com page; the adapter's `matches` decides
- * whether the page is a product page, a product modal, or a listing (S17). Passive: reads the DOM the user's browser already drew,
- * writes to the local store, and reports each stored observation to the background so the
- * lever probe (S06) can fetch the same page anonymously. It also parses the HTML the
- * background fetched, because only a content script has a DOM. Every outcome is counted for
- * the adapter health beacon (S12). All logic lives in src/capture and src/probe.
+ * Walmart content script. A shim over `capture/run.ts`, like the Instacart one: runs on every
+ * walmart.com page, the adapter's `matches` decides whether the page is a product page.
+ * Passive: reads the DOM the user's browser already drew, writes to the local store, reports
+ * each stored observation to the background for the lever probe (S06), parses the HTML the
+ * background fetched, and counts every outcome for the adapter health beacon (S12).
  */
 import { defineContentScript } from "wxt/utils/define-content-script";
 import { recordCaptureOutcome } from "../capture/health";
@@ -13,7 +12,7 @@ import { defaultDeps, startCapture } from "../capture/run";
 import { registerExtractHandler, reportOutcome } from "../probe/content";
 
 export default defineContentScript({
-  matches: ["*://*.instacart.com/*"],
+  matches: ["*://*.walmart.com/*"],
   runAt: "document_idle",
   main() {
     registerExtractHandler();

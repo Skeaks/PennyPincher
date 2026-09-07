@@ -18,6 +18,7 @@ import {
   windowStart,
 } from "./ingest/ratelimit";
 import { type ObservationRepo, type ObservationRow, toRow } from "./repo/observations";
+import { type AdapterHealthRepo, registerAdapterHealthRoutes } from "./routes/adapter-health";
 import { type CellCache, registerCellsRoute } from "./routes/cells";
 import { registerPanelistsRoute } from "./routes/panelists";
 
@@ -41,6 +42,11 @@ export interface AppDeps<E> {
    * unless the test is about caching.
    */
   cache?: (env: E) => CellCache | undefined;
+  /**
+   * Storage for the adapter health beacon (S12). D1 in the Worker; a memory repo in tests.
+   * Omitted means the `/v1/adapter-health` routes are not mounted (404).
+   */
+  adapterHealth?: (env: E) => AdapterHealthRepo;
   /** Structured log sink (S14): abuse flags, deletions, purges. `console.log` in the Worker. */
   log?: (line: string) => void;
 }
@@ -54,6 +60,8 @@ export interface AppDeps<E> {
  *                                  | 429 { errors: [...] } + Retry-After over the hourly limit
  *   GET    /v1/cells/:cellKey   -> 200 CellResponse (see routes/cells.ts) | 400 | 401
  *   DELETE /v1/panelists/:id    -> 200 { panelistId, deleted } | 400 | 401
+ *   POST   /v1/adapter-health   -> 201 { stored } | 400 | 401 (see routes/adapter-health.ts)
+ *   GET    /v1/adapter-health   -> 200 AdapterHealthSummary[] | 401
  *
  * Ingest order (S14): validate, rate-limit check, semantic dedup, store, count against the
  * rate limit, abuse check. A batch refused by validation or the limit stores nothing.
@@ -146,6 +154,10 @@ export function createApp<E extends object>(deps: AppDeps<E>) {
   });
 
   registerPanelistsRoute(app, { repo: deps.repo, denied, log });
+
+  if (deps.adapterHealth) {
+    registerAdapterHealthRoutes(app, { repo: deps.adapterHealth, now, denied });
+  }
 
   app.notFound((c) => c.json({ errors: ["not found"] }, 404));
 

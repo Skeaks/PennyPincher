@@ -8,8 +8,12 @@
  */
 import { browser } from "wxt/browser";
 
-/** 2 (S06): the consent copy now describes the anonymous logged-out page request. */
-export const CONSENT_VERSION = 2;
+/**
+ * 2 (S06): the consent copy describes the anonymous logged-out page request.
+ * 3 (S17): the copy says prices are also recorded from search, aisle and storefront tiles,
+ * not only product pages.
+ */
+export const CONSENT_VERSION = 3;
 export const CONSENT_KEY = "pp:consent";
 
 export interface ConsentRecord {

@@ -7,6 +7,7 @@
 import { PriceObservation } from "@pennypincher/schema";
 import { beforeEach, describe, expect, it } from "vitest";
 import { fakeBrowser } from "wxt/testing/fake-browser";
+import { INSTACART_ADAPTER_VERSION } from "../../src/capture/adapters/instacart";
 import { acceptConsent } from "../../src/lib/consent";
 import { probeObservation } from "../../src/probe/probe";
 import { PROBE_INTERVAL_MS, loadProbeState } from "../../src/probe/state";
@@ -15,6 +16,7 @@ import {
   LOGIN_WALL_HTML,
   T0,
   URL_BANANAS,
+  URL_MILK,
   URL_TARGET_BANANA,
   directExtract,
   fakeFetch,
@@ -31,6 +33,7 @@ const loggedOut = fixture("instacart", "wegmans-bananas-logged-out");
 const strawberries = fixture("instacart", "wegmans-organic-strawberries-16oz");
 const targetIn = fixture("target", "banana-each");
 const targetOut = fixture("target", "banana-each-logged-out");
+const milkAnonymous = fixture("instacart", "walmart-whole-milk-1gal-anonymous-fetch-logged-out");
 
 async function ownBananas(): Promise<PriceObservation> {
   const mine = ownInstacartObservation(loggedIn, URL_BANANAS);
@@ -82,7 +85,7 @@ describe("a logged-in observation with a logged-out page for the same SKU", () =
         surface: "web",
         device: "desktop",
       },
-      provenance: { adapter: "instacart@0.1.0", clientVersion: "0.1.0" },
+      provenance: { adapter: `instacart@${INSTACART_ADAPTER_VERSION}`, clientVersion: "0.1.0" },
     });
     expect(anon?.observationId).not.toBe(mine.observationId);
     // The user's own row is untouched: still logged in, no cleanSession flag.
@@ -158,6 +161,80 @@ describe("a logged-in observation with a logged-out page for the same SKU", () =
       result: { verdict: "UNCHECKED", reason: "sku_mismatch" },
     });
     expect(fetch.calls).toHaveLength(2);
+  });
+});
+
+describe("the milk page as the probe really receives it (S17)", () => {
+  /**
+   * The logged-in side stands in for the product modal fixture, which has not been recorded
+   * yet: the same milk page extracted as passive capture would on a signed-in tab. The
+   * anonymous side is the real server-rendered HTML the probe fetched, whose header is a
+   * skeleton and which shows no Delivery / Pickup control. Before S17 this was
+   * "Could not check" (`no_fulfillment`); now it is a verdict.
+   */
+  it("produces a verdict, not a failure, and keeps the store in the URL it fetches", async () => {
+    const mine = ownInstacartObservation(milkAnonymous, URL_MILK, undefined, {
+      sessionState: "logged_in",
+    });
+    expect(mine.product.url).toBe(URL_MILK);
+    expect(mine.context.sessionState).toBe("logged_in");
+    await append(mine);
+    const fetch = fakeFetch(milkAnonymous.html);
+    const outcome = await probeObservation(mine, probeDeps({ fetchPage: fetch.fetchPage }));
+
+    expect(fetch.calls).toEqual([URL_MILK]);
+    expect(outcome).toMatchObject({
+      status: "checked",
+      result: {
+        key: "instacart:20654983",
+        verdict: "SAME",
+        deltaMinor: 0,
+        mine: { amountMinor: 495, priceText: "$4.95", storeLabel: "Walmart" },
+        anon: {
+          amountMinor: 495,
+          priceText: "$4.95",
+          storeLabel: "Walmart",
+          fulfillment: "delivery",
+        },
+      },
+    });
+    expect((outcome as { result: { reason?: unknown } }).result.reason).toBeUndefined();
+
+    const rows = await list();
+    expect(rows).toHaveLength(2);
+    expect(PriceObservation.safeParse(rows[1]).success).toBe(true);
+    expect(rows[1]).toMatchObject({
+      product: { retailerSku: "20654983", url: URL_MILK, brand: "great value", sizeText: "1 gal" },
+      store: { label: "Walmart" },
+      context: {
+        sessionState: "logged_out",
+        cleanSession: true,
+        fulfillment: "delivery",
+        fulfillmentInferred: true,
+      },
+    });
+    expect((await loadProbeState()).stats.instacart).toEqual({
+      checks: 1,
+      differences: 0,
+      failures: 0,
+      failuresByReason: {},
+    });
+  });
+
+  it("reports the difference when the anonymous milk page shows another price", async () => {
+    const mine = ownInstacartObservation(milkAnonymous, URL_MILK, undefined, {
+      sessionState: "logged_in",
+    });
+    await append(mine);
+    const cheaperAnon = milkAnonymous.html.replace("Current price: $4.95", "Current price: $4.78");
+    const outcome = await probeObservation(
+      mine,
+      probeDeps({ fetchPage: fakeFetch(cheaperAnon).fetchPage }),
+    );
+    expect(outcome).toMatchObject({
+      status: "checked",
+      result: { verdict: "MORE", deltaMinor: 17, anon: { amountMinor: 478 } },
+    });
   });
 });
 

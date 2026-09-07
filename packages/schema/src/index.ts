@@ -19,7 +19,7 @@
  */
 import { z } from "zod";
 
-export const SCHEMA_VERSION = "1.0.0" as const;
+export const SCHEMA_VERSION = "1.1.0" as const;
 
 /**
  * Retailers we have fixtures for, and therefore can write adapters against. Adding a value is
@@ -226,6 +226,17 @@ export const CaptureContext = z.object({
    * set it; the lever probe (S06) does.
    */
   cleanSession: z.boolean().optional(),
+  /**
+   * True when the page showed no Delivery / Pickup control and the adapter recorded the
+   * retailer's default path instead of a selection. New in 1.1.0 (S17). Instacart's
+   * server-rendered product HTML (what the lever probe fetches anonymously) and some listing
+   * tiles carry no such control; Instacart defaults to delivery. Absent or false means
+   * `fulfillment` was read from the page. The stats engine should not treat an inferred path
+   * as a lever the shopper chose.
+   * fixtures: instacart/walmart-whole-milk-1gal-anonymous-fetch-logged-out (no
+   * `[aria-label="service type"]` anywhere on the page).
+   */
+  fulfillmentInferred: z.boolean().optional(),
 });
 export type CaptureContext = z.infer<typeof CaptureContext>;
 

@@ -6,10 +6,10 @@ export const CONSENT_COPY = {
   title: "Before PennyPincher does anything",
   intro:
     "PennyPincher records the prices you are already shown while you shop on supported " +
-    "retailer sites, so shoppers can see how those prices vary. It does nothing until you " +
-    "agree below.",
+    "retailer sites, on product pages and on the tiles of search results and aisles, so " +
+    "shoppers can see how those prices vary. It does nothing until you agree below.",
   collected: [
-    "The product you were looking at: its name, retailer item number, size text, and page address.",
+    "Each product whose price was shown to you, on its own page or as a tile in search results or an aisle: its name, retailer item number, size text, and page address.",
     "The price shown to you, any struck-through price, unit price text, and promo labels.",
     "Which retailer and store, how you were getting the item (delivery, pickup, in store, shipped), and whether you appeared to be signed in.",
     "The first three digits of the ZIP code the retailer was serving, and whether you were on a desktop, phone, or tablet.",
@@ -21,7 +21,7 @@ export const CONSENT_COPY = {
     "Your retailer passwords, sign-in sessions, cookies, or payment details.",
     "Your full ZIP code, your IP address, or your browser's user-agent string.",
     "Anything from sites other than the supported retailers.",
-    "Anything at all while you are not on a product page of a supported retailer.",
+    "Anything at all while you are not on a product, search, aisle or storefront page of a supported retailer.",
   ],
   howItWorks: [
     "The extension only reads what your browser already drew on the page. It never signs in, clicks, searches, or navigates for you.",

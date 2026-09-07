@@ -8,7 +8,7 @@ import { Window } from "happy-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fakeBrowser } from "wxt/testing/fake-browser";
 import type { Adapter } from "../../src/capture/adapter";
-import { instacartAdapter } from "../../src/capture/adapters/instacart";
+import { INSTACART_ADAPTER_VERSION, instacartAdapter } from "../../src/capture/adapters/instacart";
 import { getPanelistId } from "../../src/capture/panelist";
 import {
   type CaptureDeps,
@@ -46,6 +46,7 @@ function spyAdapter(): { adapter: Adapter; calls: number } {
     name: "instacart",
     version: "9.9.9",
     matches: (url) => instacartAdapter.matches(url),
+    pageKind: (url) => instacartAdapter.pageKind(url),
     extract(doc, ctx) {
       state.calls += 1;
       return instacartAdapter.extract(doc, ctx);
@@ -90,7 +91,7 @@ describe("captureOnce", () => {
       retailer: "instacart",
       product: { retailerSku: "2748189", url: URL_BANANAS },
       facts: { price: { amountMinor: 22, currency: "USD" } },
-      provenance: { adapter: "instacart@0.1.0", clientVersion: "0.1.0" },
+      provenance: { adapter: `instacart@${INSTACART_ADAPTER_VERSION}`, clientVersion: "0.1.0" },
     });
     expect(row?.panelistId).toBe(await getPanelistId(new Date("2026-09-04T15:00:00.000Z")));
   });
@@ -122,7 +123,7 @@ describe("captureOnce", () => {
     const outcome = await captureOnce(doc, ctx, deps());
     expect(outcome).toEqual({
       status: "extract_failed",
-      adapter: "instacart@0.1.0",
+      adapter: `instacart@${INSTACART_ADAPTER_VERSION}`,
       reason: "no_title",
     });
     expect(await count()).toBe(0);
@@ -135,6 +136,81 @@ describe("captureOnce", () => {
     expect(outcome).toMatchObject({ status: "rejected" });
     expect((outcome as { error: string }).error).toMatch(/clientVersion/);
     expect(await count()).toBe(0);
+  });
+});
+
+describe("captureOnce on a listing page (S17)", () => {
+  const URL_AISLE = "https://www.instacart.com/store/wegmans/collections/produce?page=2";
+  const ctx = { url: URL_AISLE, surface: "web", device: "desktop" } as const;
+
+  it("stores one row per priced tile, all schema-valid, and reports the page", async () => {
+    await acceptConsent();
+    const doc = parseDocument(bananas.html, URL_AISLE);
+    const outcome = await captureOnce(doc, ctx, deps());
+    expect(outcome.status).toBe("listing");
+    if (outcome.status !== "listing") return;
+    expect(outcome.url).toBe("https://www.instacart.com/store/wegmans/collections/produce");
+    expect(outcome.adapter).toBe(`instacart@${INSTACART_ADAPTER_VERSION}`);
+    expect(outcome.stored.length).toBeGreaterThanOrEqual(10);
+    expect(outcome.duplicates).toBe(0);
+    expect(outcome.rejected).toBe(0);
+    expect(outcome.skipped).toEqual({});
+    const rows = await list();
+    expect(rows).toHaveLength(outcome.stored.length);
+    for (const row of rows) expect(PriceObservation.safeParse(row).success).toBe(true);
+    expect(new Set(rows.map((r) => r.product.retailerSku)).size).toBe(rows.length);
+    expect(rows.map((r) => r.observationId)).toEqual(
+      rows.map((_, i) => `00000000-0000-4000-8000-${String(i + 1).padStart(12, "0")}`),
+    );
+  });
+
+  it("the same tiles are not stored twice within a page session", async () => {
+    await acceptConsent();
+    const doc = parseDocument(bananas.html, URL_AISLE);
+    const seen = new Set<string>();
+    const first = await captureOnce(doc, ctx, deps(), seen);
+    const second = await captureOnce(doc, ctx, deps(), seen);
+    if (first.status !== "listing" || second.status !== "listing") throw new Error("not listing");
+    expect(second.stored).toEqual([]);
+    expect(second.duplicates).toBe(first.stored.length);
+    expect(await count()).toBe(first.stored.length);
+  });
+
+  it("without consent, no tile is read", async () => {
+    const spy = spyAdapter();
+    const doc = parseDocument(bananas.html, URL_AISLE);
+    expect(await captureOnce(doc, ctx, deps({ adapters: [spy.adapter] }))).toEqual({
+      status: "no_consent",
+    });
+    expect(await count()).toBe(0);
+  });
+
+  it("a store that rejects every row reports them as rejected, nothing thrown", async () => {
+    await acceptConsent();
+    const doc = parseDocument(bananas.html, URL_AISLE);
+    const outcome = await captureOnce(doc, ctx, deps({ clientVersion: "not-semver" }));
+    expect(outcome.status).toBe("listing");
+    if (outcome.status !== "listing") return;
+    expect(outcome.stored).toEqual([]);
+    expect(outcome.rejected).toBeGreaterThanOrEqual(10);
+    expect(await count()).toBe(0);
+  });
+
+  it("an adapter without a tile extractor records nothing on a listing", async () => {
+    await acceptConsent();
+    const adapter: Adapter = {
+      name: "instacart",
+      version: "0.0.0",
+      matches: () => true,
+      pageKind: () => "listing",
+      extract: () => ({ ok: false, reason: "not_product_page" }),
+    };
+    const outcome = await captureOnce(
+      parseDocument(bananas.html, URL_AISLE),
+      ctx,
+      deps({ adapters: [adapter] }),
+    );
+    expect(outcome).toMatchObject({ status: "listing", stored: [], skipped: {} });
   });
 });
 
@@ -266,6 +342,49 @@ describe("startCapture", () => {
     const rows = await list();
     expect(rows.map((r) => r.facts.price.amountMinor)).toEqual([22, 31]);
 
+    stop();
+  });
+
+  it("on a listing page, stores the tiles and records the tally for the popup", async () => {
+    await acceptConsent();
+    const win = new Window({
+      url: "https://www.instacart.com/store/wegmans/collections/produce?page=2",
+      width: 1440,
+      height: 900,
+    });
+    win.document.write(bananas.html);
+    const tallies: [string, number][] = [];
+    const outcomes: CaptureOutcome[] = [];
+    const sched = scheduler();
+    const stop = startCapture(
+      win as unknown as globalThis.Window,
+      deps({
+        tally: async (url, recorded) => {
+          tallies.push([url, recorded]);
+        },
+      }),
+      sched.opts,
+      (o) => outcomes.push(o),
+    );
+    await waitFor(() => outcomes.length >= 1);
+    expect(outcomes[0]?.status).toBe("listing");
+    const stored = await count();
+    expect(stored).toBeGreaterThanOrEqual(10);
+    expect(tallies).toEqual([
+      ["https://www.instacart.com/store/wegmans/collections/produce", stored],
+    ]);
+
+    // Unrelated churn: same tiles, nothing new stored, the tally is restated unchanged.
+    win.document.body.appendChild(win.document.createElement("div"));
+    await delivered();
+    sched.fire();
+    await waitFor(() => outcomes.length >= 2);
+    expect(outcomes[1]).toMatchObject({ status: "listing", stored: [], duplicates: stored });
+    expect(await count()).toBe(stored);
+    expect(tallies[1]).toEqual([
+      "https://www.instacart.com/store/wegmans/collections/produce",
+      stored,
+    ]);
     stop();
   });
 

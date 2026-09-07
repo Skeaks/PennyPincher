@@ -11,13 +11,16 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "mutation": "stryker run"
   },
   "dependencies": {
     "@pennypincher/schema": "workspace:*"
   },
   "devDependencies": {
     "@pennypincher/synth": "workspace:*",
+    "@stryker-mutator/core": "9.6.1",
+    "@stryker-mutator/vitest-runner": "9.6.1",
     "@types/node": "22.10.5",
     "fast-check": "4.9.0"
   }

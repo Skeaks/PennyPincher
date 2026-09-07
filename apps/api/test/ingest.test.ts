@@ -73,7 +73,11 @@ describe("POST /v1/observations", () => {
   it("counts duplicate ids instead of rejecting them", async () => {
     const { repo, post } = testApp();
     const a = validObservation();
-    const b = validObservation({ observationId: uuidFor(2) });
+    // S14: rows are distinct products, otherwise semantic dedup folds them as repeat views.
+    const b = validObservation({
+      observationId: uuidFor(2),
+      product: { ...a.product, retailerSku: "2748190" },
+    });
 
     const first = await post({ observations: [a, b] });
     expect(await first.json()).toEqual({ accepted: 2, duplicates: 0 });
@@ -84,7 +88,10 @@ describe("POST /v1/observations", () => {
     expect(await resent.json()).toEqual({ accepted: 0, duplicates: 2 });
 
     // Partial overlap plus a repeat inside the same batch.
-    const c = validObservation({ observationId: uuidFor(3) });
+    const c = validObservation({
+      observationId: uuidFor(3),
+      product: { ...a.product, retailerSku: "2748191" },
+    });
     const mixed = await post({ observations: [a, c, c] });
     expect(mixed.status).toBe(201);
     expect(await mixed.json()).toEqual({ accepted: 1, duplicates: 2 });
@@ -116,8 +123,13 @@ describe("POST /v1/observations", () => {
 
   it("accepts a batch of exactly 200", async () => {
     const { post } = testApp();
+    const base = validObservation();
+    // S14: 200 distinct products; 200 views of one price would be one observation.
     const observations = Array.from({ length: 200 }, (_, i) =>
-      validObservation({ observationId: uuidFor(i + 1) }),
+      validObservation({
+        observationId: uuidFor(i + 1),
+        product: { ...base.product, retailerSku: `sku-${i}` },
+      }),
     );
     const res = await post({ observations });
     expect(res.status).toBe(201);

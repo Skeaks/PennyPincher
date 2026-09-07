@@ -21,6 +21,7 @@ import {
   resolve,
 } from "@pennypincher/stats";
 import type { Context, Hono } from "hono";
+import { activeSuspects } from "../ingest/abuse";
 import type { ObservationRepo, ObservationRow } from "../repo/observations";
 
 /** How long the edge serves one answer before recomputing it. */
@@ -68,6 +69,8 @@ export interface CellsDeps<E extends object> {
    * caching. Only responses that passed the bearer check are ever put in it.
    */
   cache?: (env: E) => CellCache | undefined;
+  /** Structured log sink; the route reports when it excluded suspects (S14). */
+  log?: (line: string) => void;
 }
 
 export function registerCellsRoute<E extends object>(
@@ -93,7 +96,23 @@ export function registerCellsRoute<E extends object>(
 
     const now = deps.now();
     const from = new Date(now.getTime() - DEFAULT_WINDOW_HOURS * 3_600_000);
-    const rows = await deps.repo(c.env).listByCell(cellKey, from, now);
+    const repo = deps.repo(c.env);
+    const all = await repo.listByCell(cellKey, from, now);
+    // The abuse guard (S14): an unreviewed suspect's rows never reach the resolver.
+    const suspects = activeSuspects(
+      await repo.getFlags([...new Set(all.map((r) => r.panelistId))]),
+    );
+    const rows = suspects.size === 0 ? all : all.filter((r) => !suspects.has(r.panelistId));
+    if (suspects.size > 0) {
+      deps.log?.(
+        JSON.stringify({
+          event: "suspects_excluded",
+          cellKey,
+          panelists: suspects.size,
+          rows: all.length - rows.length,
+        }),
+      );
+    }
     const body = queryCell(cellKey, rows, now);
 
     const res = c.json(body, 200, { "cache-control": `public, max-age=${CELL_CACHE_SECONDS}` });

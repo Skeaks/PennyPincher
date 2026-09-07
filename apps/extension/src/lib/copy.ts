@@ -26,14 +26,16 @@ export const CONSENT_COPY = {
   howItWorks: [
     "The extension only reads what your browser already drew on the page. It never signs in, clicks, searches, or navigates for you.",
     "To check whether being signed in changes your price, the extension asks the retailer for the public page of the product you are viewing, the way a visitor who is not signed in would see it: without your cookies, sign-in, or any credentials. It does this at most once per product per hour, and if the retailer tries to send that request somewhere else it stops rather than follow.",
-    "Every 15 minutes the records listed above are sent to PennyPincher's own server, under the rotating ID, so they can be pooled with other panelists' records. When you open the extension on a product, it asks that same server how the prices other panelists were shown for that product spread out. Those two requests and the page request above are the only network requests this version makes; none of them carries your cookies, sign-in, or anything that identifies you.",
+    "Every 15 minutes the records listed above are sent to PennyPincher's own server, under the rotating ID, so they can be pooled with other panelists' records. When you open the extension on a product, it asks that same server how the prices other panelists were shown for that product spread out. When you press \"Delete my data\", it asks that server to remove everything sent under your IDs. Those three requests and the page request above are the only network requests this version makes; none of them carries your cookies, sign-in, or anything that identifies you.",
+    "The rotating ID changes every 7 days. The server keeps each record for 90 days, then deletes it.",
   ],
   deleteEverything:
     "You can delete everything on this computer at any time. The extension's options page has a " +
     '"Delete my data" button that removes every record stored here, and an "Export my data" ' +
-    "button that gives you a copy first if you want one. Removing the extension also deletes " +
-    "everything it stored. Records already sent to the server carry only the rotating ID; a " +
-    "request to remove them from the server is coming in a later version.",
+    'button that gives you a copy first if you want one. "Delete my data" also asks ' +
+    "PennyPincher's server to remove every record sent under any ID this browser has used, and " +
+    "tells you whether that worked. Removing the extension deletes everything it stored on this " +
+    "computer; records already on the server then expire on their own after 90 days.",
   optInLabel: "I understand what is collected and what is not, and I agree to take part.",
   acceptButton: "Turn on PennyPincher",
   acceptedTitle: "Thank you",

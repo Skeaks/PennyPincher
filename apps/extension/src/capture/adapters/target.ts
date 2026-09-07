@@ -1,8 +1,9 @@
 /**
  * Target adapter. Written against fixtures/target/* (four product pages, Durham and Princeton
- * stores, 2026-09-04 snapshots). Product pages only: no fixture shows a Target search page or
- * a quick-view modal, so `pageKind` knows the product surface alone and there is no
- * `extractTiles` yet (S12 retro asks Jamie for a listing capture; selectors are not guessed).
+ * stores, 2026-09-04 snapshots) and the search results for "banana" (search-banana,
+ * 2026-09-07, Durham). Two surfaces: the product page (`/p/<slug>/-/A-<sku>`) and listings
+ * (search `/s?searchTerm=…` and `/s/<term>`, categories `/c/…`, brands `/b/…`). No fixture
+ * shows a quick-view modal, so none is handled.
  *
  * The trap the fixture sidecars record: Target renders the hero price box lazily.
  * `[data-test="product-price"]` inside the price module is an empty skeleton until the page
@@ -58,6 +59,22 @@
  *                  link ("<name>, 1 notification …") is logged in; no link is unknown.
  *  - zip3:         `[data-test="@web/ZipCodeButton/ZipCodeNumber"]` ("Ship to 08540").
  *                  Fixtures scrub the digits, so on a fixture this is absent.
+ *  - tiles:        two shapes on a listing. The results grid's
+ *                  `[data-test="ListingPageProductListing"]`: an `a[data-test="content"]`
+ *                  link to `/p/…/A-<sku>` whose `aria-label` is the title in product-page
+ *                  form ("Fresh Banana - each - Good & Gather™"), the price in the first
+ *                  `[data-test="text-quill-insert-0"]` under that link that holds a dollar
+ *                  amount (the `h3` title and the rating block are skipped), a unit price in
+ *                  the same rich-text block ("($0.06/ounce)"), and "Pickup ready within 2
+ *                  hours" / "Delivery as soon as 5pm" lines. And the carousel card
+ *                  `[data-test="productCardVariantMini"]` (in-grid sponsored row,
+ *                  recommendations): the link is any `a[href*="/p/"]`, the title
+ *                  `[data-test="productCardVariantMiniTitle"]`, the price the first span in
+ *                  `[data-test="@web/Price/PriceAndPromoMinimal"]`, the was-price
+ *                  `[data-test="strikethroughFormattedRegPrice"]` with a "Sale" message and
+ *                  a `PromoDetails` line. A listing shows no selected fulfilment cell and no
+ *                  `store-name-<id>` button: the store is the header label alone and a tile's
+ *                  fulfilment is the first line it shows, flagged `fulfillmentInferred`.
  */
 import type { Fulfillment, SessionState, StoreRef } from "@pennypincher/schema";
 import {
@@ -66,6 +83,7 @@ import {
   type ExtractResult,
   type PageContext,
   type PageKind,
+  type TileExtraction,
   canonicalUrl,
   fail,
   textOf,
@@ -74,10 +92,14 @@ import {
 import { evidenceHash } from "../evidence";
 import { jsonLdEvidenceHash, productJsonLd } from "../jsonld";
 import { type ParsedMoney, parseMoney } from "../money";
+import { type TileReader, collectTiles } from "../tiles";
 
 export const TARGET_ADAPTER_VERSION = "0.1.0";
 
 const PRODUCT_PATH = /\/p\/(?:[^/]+\/)?-\/A-(\d+)(?:[/?#]|$)/i;
+const LISTING_PATH = /^\/(?:s|c|b)(?:\/|$)/;
+const TILE_FULFILLMENT = /^(pickup|delivery|shipping)\b/i;
+const NOT_TILE_PRICE = 'h3, [data-test="rating-stars"], [data-test="cdui-marker-v2"]';
 const ADD_TO_CART_ID = /^addToCartButtonOrTextIdFor(\d+)$/;
 const STORE_NAME_ID = /^store-name-(\d+)$/;
 const STORE_ARIA = /^\s*store:\s*(.+?)\s*$/i;
@@ -85,8 +107,9 @@ const SHOP_ALL = /^\s*shop all\s+/i;
 const UNIT_PRICE = /\$\d[\d,]*(?:\.\d+)?\s*\/\s*(?:fl\s?oz|[a-z]+)/i;
 const ESTIMATE = /\(est\.?\)|\bestimated\b|\bprice varies\b/i;
 const WAS_PRICE = /\b(?:was|reg\.?|regular)\s+(\$\s?\d[\d,]*(?:\.\d{2})?)/i;
+/** Offers, not shipping terms: "Ships free" and "Lactose-Free" are not price promotions. */
 const PROMO =
-  /\b(?:sale|clearance|price drop|deal|\d+% off|\$[\d.]+ off|buy \d+,? get|bogo|coupon|free)\b/i;
+  /\b(?:sale|clearance|price drop|deal|\d+% off|\$[\d.]+ off|buy \d+,? get|bogo|coupon)\b/i;
 const MEMBER = /\bcircle\b/i;
 const ZIP = /\b(\d{5})(?:-\d{4})?\b/;
 const SIGN_IN = /\bsign in\b/i;
@@ -112,7 +135,9 @@ function pageKind(url: string): PageKind | undefined {
   try {
     const u = new URL(url);
     if (!hostMatches(u.hostname)) return undefined;
-    return PRODUCT_PATH.test(u.pathname) ? "product" : undefined;
+    if (PRODUCT_PATH.test(u.pathname)) return "product";
+    if (LISTING_PATH.test(u.pathname)) return "listing";
+    return undefined;
   } catch {
     return undefined;
   }
@@ -196,6 +221,39 @@ function findSku(doc: Document, url: string): string | undefined {
     if (m?.[1]) return m[1];
   }
   return undefined;
+}
+
+/** Everything read once per page and shared by the hero and every tile. */
+interface PageFacts {
+  store: StoreRef | undefined;
+  fulfillment: FulfillmentRead;
+  sessionState: SessionState;
+  zip3: string | undefined;
+}
+
+function readPage(doc: Document, ctx: PageContext): PageFacts {
+  return {
+    store: findStore(doc),
+    fulfillment: findFulfillment(doc, ctx.fulfillment),
+    sessionState: ctx.sessionState ?? findSessionState(doc),
+    zip3: findZip3(doc),
+  };
+}
+
+function contextOf(
+  page: PageFacts,
+  ctx: PageContext,
+  fulfillment: FulfillmentRead,
+): AdapterObservation["context"] {
+  return withDefined({
+    fulfillment: fulfillment.fulfillment,
+    sessionState: page.sessionState,
+    surface: ctx.surface,
+    zip3: page.zip3,
+    device: ctx.device,
+    cleanSession: ctx.cleanSession,
+    fulfillmentInferred: fulfillment.inferred ? true : undefined,
+  });
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -319,7 +377,7 @@ function extractHero(doc: Document, ctx: PageContext): ExtractResult {
     ? readPriceNeighbours(doc, found.read)
     : { promoTags: [], memberPrice: false };
   const isEstimate = found.read ? ESTIMATE.test(textOf(found.read.container)) : false;
-  const fulfillment = findFulfillment(doc, ctx.fulfillment);
+  const page = readPage(doc, ctx);
 
   const observation: AdapterObservation = {
     retailer: "target",
@@ -340,21 +398,153 @@ function extractHero(doc: Document, ctx: PageContext): ExtractResult {
       promoTags: neighbours.promoTags,
       memberPrice: neighbours.memberPrice,
     }),
-    context: withDefined({
-      fulfillment: fulfillment.fulfillment,
-      sessionState: ctx.sessionState ?? findSessionState(doc),
-      surface: ctx.surface,
-      zip3: findZip3(doc),
-      device: ctx.device,
-      cleanSession: ctx.cleanSession,
-      fulfillmentInferred: fulfillment.inferred ? true : undefined,
-    }),
+    context: contextOf(page, ctx, page.fulfillment),
     adapter: `target@${TARGET_ADAPTER_VERSION}`,
     evidenceHash: evidence,
   };
-  const store = findStore(doc);
-  if (store) observation.store = store;
+  if (page.store) observation.store = page.store;
   return { ok: true, observation };
+}
+
+// ---------------------------------------------------------------------------------------------
+// Tiles.
+// ---------------------------------------------------------------------------------------------
+
+/** "Pickup ready within 2 hours" -> pickup; "Shipping …" -> ship. */
+function fulfillmentOfLine(text: string): Fulfillment | undefined {
+  const word = TILE_FULFILLMENT.exec(text)?.[1]?.toLowerCase();
+  if (word === "pickup") return "pickup";
+  if (word === "delivery") return "delivery";
+  if (word === "shipping") return "ship";
+  return undefined;
+}
+
+/** The first fulfilment line a tile shows, else the page's; a listing has no selection. */
+function tileFulfillment(tile: Element, page: FulfillmentRead): FulfillmentRead {
+  if (!page.inferred) return page;
+  for (const block of Array.from(tile.querySelectorAll('[data-test="text-quill"]'))) {
+    const f = fulfillmentOfLine(textOf(block));
+    if (f) return { fulfillment: f, inferred: true };
+  }
+  return page;
+}
+
+interface TilePrice {
+  element: Element;
+  container: Element;
+  price: ParsedMoney;
+  /** The price block's text, for the unit price, estimate and was-price reads. */
+  text: string;
+}
+
+/** The mini card's price block, else the listing tile's first rich-text dollar amount. */
+function tilePrice(tile: Element): TilePrice | undefined {
+  const minimal = tile.querySelector('[data-test="@web/Price/PriceAndPromoMinimal"]');
+  if (minimal) {
+    for (const span of Array.from(minimal.querySelectorAll("span"))) {
+      if (span.closest('[data-test*="Strikethrough"], [data-test*="PromoDetails"]')) continue;
+      const price = parseMoney(textOf(span));
+      if (price) return { element: span, container: minimal, price, text: textOf(minimal) };
+    }
+    return undefined;
+  }
+  const content = tile.querySelector('a[data-test="content"]') ?? tile;
+  for (const el of Array.from(content.querySelectorAll('[data-test="text-quill-insert-0"]'))) {
+    if (el.closest(NOT_TILE_PRICE)) continue;
+    const price = parseMoney(textOf(el));
+    if (!price) continue;
+    const container = el.closest('[data-test="text-quill"]') ?? el.parentElement ?? el;
+    const wrapper = container.closest('[data-test="container-cdui-item-wrapper"]') ?? container;
+    return { element: el, container, price, text: textOf(wrapper) };
+  }
+  return undefined;
+}
+
+function tileTitle(tile: Element): string {
+  const content = tile.querySelector('a[data-test="content"]');
+  const label = content?.getAttribute("aria-label")?.replace(/\s+/g, " ").trim();
+  if (label) return label;
+  const mini = textOf(tile.querySelector('[data-test="productCardVariantMiniTitle"]'));
+  if (mini) return mini;
+  return textOf(tile.querySelector("h3"));
+}
+
+function tileReader(doc: Document, ctx: PageContext): TileReader {
+  const page = readPage(doc, ctx);
+  return {
+    tiles(d) {
+      // Grid tiles first: a product shown both in the "Inspired by recent activity" carousel
+      // and in the results keeps the results rendering (with its fulfilment lines).
+      return [
+        ...Array.from(d.querySelectorAll('[data-test="ListingPageProductListing"]')),
+        ...Array.from(d.querySelectorAll('[data-test="productCardVariantMini"]')),
+      ];
+    },
+    read(tile): ExtractResult {
+      const link = tile.querySelector('a[href*="/p/"]');
+      const href = link?.getAttribute("href") ?? "";
+      const sku = link ? skuInUrl(href) : undefined;
+      if (!link || !sku) return fail("no_sku");
+      let url: string | undefined;
+      try {
+        url = canonicalUrl(new URL(href, ctx.url).href);
+      } catch {
+        url = undefined;
+      }
+      if (url === undefined) return fail("no_sku");
+
+      const read = tilePrice(tile);
+      if (!read) return fail("no_price");
+      const title = tileTitle(tile);
+      if (!title) return fail("no_title");
+
+      const unit = UNIT_PRICE.exec(read.text.replace(read.price.priceText, " "));
+      let wasPrice: ParsedMoney | undefined;
+      const reg = tile.querySelector('[data-test="strikethroughFormattedRegPrice"], s, del');
+      if (reg) wasPrice = parseMoney(textOf(reg));
+      if (!wasPrice) {
+        const m = WAS_PRICE.exec(read.text);
+        if (m?.[1]) wasPrice = parseMoney(m[1]);
+      }
+      const promoTags: string[] = [];
+      let memberPrice = false;
+      for (const el of Array.from(tile.querySelectorAll("*"))) {
+        if (el.children.length > 0 || read.element.contains(el)) continue;
+        if (el.closest("h3, button") || el.closest('[data-test="rating-stars"]')) continue;
+        const text = textOf(el);
+        if (!text || text.length > 64) continue;
+        if (PROMO.test(text) && !promoTags.includes(text)) promoTags.push(text);
+        if (MEMBER.test(text)) memberPrice = true;
+      }
+      const fulfillment = tileFulfillment(tile, page.fulfillment);
+
+      const observation: AdapterObservation = {
+        retailer: "target",
+        product: withDefined({
+          retailerSku: sku,
+          title,
+          brand: undefined,
+          sizeText: undefined,
+          url,
+          upc: undefined,
+        }),
+        facts: withDefined({
+          price: read.price.money,
+          priceText: read.price.priceText,
+          isEstimate: ESTIMATE.test(read.text),
+          wasPrice: wasPrice?.money,
+          unitPriceText: unit?.[0]?.replace(/\s+/g, " ").trim(),
+          promoTags,
+          memberPrice,
+        }),
+        context: contextOf(page, ctx, fulfillment),
+        adapter: `target@${TARGET_ADAPTER_VERSION}`,
+        evidenceHash: evidenceHash(read.container),
+      };
+      if (page.store) observation.store = page.store;
+      return { ok: true, observation };
+    },
+  };
 }
 
 export const targetAdapter: Adapter = {
@@ -367,6 +557,13 @@ export const targetAdapter: Adapter = {
       return extractHero(doc, ctx);
     } catch (e) {
       return fail("adapter_threw", e instanceof Error ? e.message : String(e));
+    }
+  },
+  extractTiles(doc, ctx): TileExtraction {
+    try {
+      return collectTiles(doc, tileReader(doc, ctx));
+    } catch {
+      return { observations: [], skipped: { adapter_threw: 1 } };
     }
   },
 };

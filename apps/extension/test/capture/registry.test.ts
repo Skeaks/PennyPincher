@@ -34,13 +34,15 @@ describe("findAdapter", () => {
     ["https://www.instacart.com/store/s?k=milk", "instacart"],
     ["https://www.target.com/p/fresh-banana-each/-/A-15013944?preselect=1", "target"],
     ["https://www.walmart.com/ip/Fresh-Banana-Each/44390948#top", "walmart"],
+    ["https://www.target.com/s?searchTerm=bananas", "target"],
+    ["https://www.walmart.com/search?q=bananas", "walmart"],
   ])("picks the adapter for %s", (url, name) => {
     expect(findAdapter(url)?.name).toBe(name);
   });
 
   it.each([
-    "https://www.target.com/s?searchTerm=bananas",
-    "https://www.walmart.com/search?q=bananas",
+    "https://www.target.com/cart",
+    "https://www.walmart.com/cp/great-value/3495493",
     "https://www.amazon.com/dp/B0000",
     "https://www.instacart.com/",
     "",

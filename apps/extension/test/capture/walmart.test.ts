@@ -2,14 +2,16 @@
  * The acceptance test for the Walmart adapter: every fixture under fixtures/walmart/ extracts
  * to an observation whose fields match its `.meta.json`. Same shape as instacart.test.ts.
  *
- * All four fixtures are product pages the browser rendered at the East Windsor Supercenter.
+ * Four fixtures are product pages the browser rendered at the East Windsor Supercenter.
  * Walmart never renders its store number (the sidecar's 3266 is from the capture log), so the
  * store assertion is label-only, as the brief and the schema say. Every page shows Pickup
- * selected in the fulfilment radios and the hero price in `[data-testid="price-wrap"]`.
+ * selected in the fulfilment radios and the hero price in `[data-testid="price-wrap"]`. The
+ * fifth (`search-banana`) is the search results for "banana": a listing, covered below.
  */
 import { PriceObservation } from "@pennypincher/schema";
 import { describe, expect, it } from "vitest";
 import type { PageContext } from "../../src/capture/adapter";
+import { textOf } from "../../src/capture/adapter";
 import { WALMART_ADAPTER_VERSION, walmartAdapter } from "../../src/capture/adapters/walmart";
 import { evidenceHash } from "../../src/capture/evidence";
 import { emptyHealthState, withOutcome } from "../../src/capture/health";
@@ -19,7 +21,14 @@ import { type Fixture, fragmentDocument, listFixtures, parseDocument } from "./d
 
 const fixtures = listFixtures("walmart");
 
+const isSearch = (f: Fixture) => f.slug.startsWith("search-");
+const productFixtures = fixtures.filter((f) => !isSearch(f));
+const searchFixture = fixtures.find(isSearch);
+if (!searchFixture) throw new Error("fixture walmart/search-banana missing");
+const URL_SEARCH = "https://www.walmart.com/search?q=banana&typeahead=ban#results";
+
 function urlFor(f: Fixture): string {
+  if (isSearch(f)) return URL_SEARCH;
   // The real Walmart URL shape, with query and fragment the adapter must strip.
   return `https://www.walmart.com/ip/${f.slug}/${f.meta.expected.retailerSku}?athbdg=L1600&from=%2Fsearch#top`;
 }
@@ -45,12 +54,19 @@ function byslug(slug: string): Fixture {
 }
 
 describe("walmart adapter against every fixture", () => {
-  it("has at least four fixtures to test against", () => {
-    expect(fixtures.length).toBeGreaterThanOrEqual(4);
+  it("has at least four product fixtures and a search to test against", () => {
+    expect(productFixtures.length).toBeGreaterThanOrEqual(4);
     expect(fixtures.every((f) => f.meta.retailer === "walmart")).toBe(true);
   });
 
-  for (const f of fixtures) {
+  it("the search fixture is a listing, and the hero extractor says not_product_page", () => {
+    expect(walmartAdapter.pageKind(URL_SEARCH)).toBe("listing");
+    expect(
+      walmartAdapter.extract(parseDocument(searchFixture.html, URL_SEARCH), ctxFor(searchFixture)),
+    ).toEqual({ ok: false, reason: "not_product_page" });
+  });
+
+  for (const f of productFixtures) {
     describe(f.slug, () => {
       it("matches the product URL as a product surface", () => {
         expect(walmartAdapter.matches(urlFor(f))).toBe(true);
@@ -199,7 +215,7 @@ describe("walmart adapter: fields beyond the sidecar", () => {
     expect(o.context.fulfillmentInferred).toBeUndefined();
   });
 
-  it("with no fulfilment radios, reads the zone-2 line; with neither, ships as inferred", () => {
+  it("with no fulfilment radios, reads the zone-2 line; with neither, ships as inferred and the store is the header's", () => {
     const f = byslug("fresh-banana-each");
     const doc = parseDocument(f.html, urlFor(f));
     doc.querySelector('[data-testid="fulfillment-zone-1"]')?.remove();
@@ -213,7 +229,11 @@ describe("walmart adapter: fields beyond the sidecar", () => {
       fulfillment: "ship",
       fulfillmentInferred: true,
     });
-    expect(bare.ok && bare.observation.store).toBeUndefined();
+    // The header banner still names the store ("Pickup or delivery? Princeton • East Windsor…").
+    expect(bare.ok && bare.observation.store).toEqual({ label: "East Windsor Supercenter" });
+    doc.querySelector('[data-automation-id="fulfillment-banner"]')?.remove();
+    const noBanner = walmartAdapter.extract(doc, ctxFor(f));
+    expect(noBanner.ok && noBanner.observation.store).toBeUndefined();
   });
 });
 
@@ -322,9 +342,16 @@ describe("walmart adapter: matches and pageKind", () => {
   });
 
   it.each([
-    "https://www.walmart.com/",
     "https://www.walmart.com/search?q=bananas",
     "https://www.walmart.com/browse/food/fresh-fruit/976759_976793_9755771",
+    "https://www.walmart.com/shop/deals",
+  ])("accepts %s as a listing surface", (url) => {
+    expect(walmartAdapter.matches(url)).toBe(true);
+    expect(walmartAdapter.pageKind(url)).toBe("listing");
+  });
+
+  it.each([
+    "https://www.walmart.com/",
     "https://www.walmart.com/cp/great-value/3495493",
     "https://www.walmart.com/reviews/product/44390948",
     "https://www.walmart.com/ip/Fresh-Banana-Each/not-a-number",
@@ -333,13 +360,134 @@ describe("walmart adapter: matches and pageKind", () => {
     "https://notwalmart.com/ip/x/1",
     "not a url",
     "",
-  ])("rejects %s (no listing surface until a fixture shows one)", (url) => {
+  ])("rejects %s", (url) => {
     expect(walmartAdapter.matches(url)).toBe(false);
     expect(walmartAdapter.pageKind(url)).toBeUndefined();
   });
+});
 
-  it("has no tile extractor yet: no Walmart listing fixture exists", () => {
-    expect(walmartAdapter.extractTiles).toBeUndefined();
+describe("walmart tiles on the recorded search for banana", () => {
+  const f = searchFixture;
+  const doc = parseDocument(f.html, URL_SEARCH);
+  const out = (() => {
+    if (!walmartAdapter.extractTiles) throw new Error("adapter has no tile extractor");
+    return walmartAdapter.extractTiles(doc, ctxFor(f));
+  })();
+  const bySku = (sku: string) => out.observations.find((o) => o.product.retailerSku === sku);
+
+  it("reads the item-stack tiles only, one row per product URL; the carousels outside are left alone", () => {
+    const stacked = doc.querySelectorAll('[data-testid="item-stack"] [data-item-id]').length;
+    expect(stacked).toBe(40);
+    expect(doc.querySelectorAll("[data-item-id]").length).toBeGreaterThan(stacked);
+    // One tile's price block is empty on this capture: counted, never thrown.
+    expect(out.observations.length + (out.skipped.no_price ?? 0)).toBe(stacked);
+    expect(out.skipped).toEqual({ no_price: 1 });
+    const urls = out.observations.map((o) => o.product.url);
+    expect(new Set(urls).size).toBe(urls.length);
+    for (const o of out.observations) {
+      expect(o.facts.price.amountMinor).toBeGreaterThan(0);
+      expect(o.product.title.length).toBeGreaterThan(0);
+      expect(o.product.url).toMatch(/^https:\/\/www\.walmart\.com\/ip\/.*\/\d+$/);
+      expect(o.store).toEqual({ label: "East Windsor Supercenter" });
+      expect(o.context.sessionState).toBe("logged_in");
+      expect(o.context.fulfillmentInferred).toBe(true);
+      expect(o.adapter).toBe(`walmart@${WALMART_ADAPTER_VERSION}`);
+    }
+  });
+
+  it("reads the sidecar's tile: the frozen bag, its per-lb unit price, not an estimate", () => {
+    const o = bySku(f.meta.expected.retailerSku);
+    expect(o).toMatchObject({
+      product: { title: f.meta.expected.title },
+      facts: {
+        price: f.meta.expected.price,
+        priceText: f.meta.expected.priceText,
+        unitPriceText: "$2.47/lb",
+        isEstimate: false,
+        promoTags: [],
+      },
+    });
+  });
+
+  it("reads the fresh banana tile from the price block's label: split digits, estimate, cents per lb, delivery line first", () => {
+    const o = bySku("44390948");
+    expect(o).toMatchObject({
+      product: { title: "Fresh Banana, Each" },
+      facts: {
+        price: { amountMinor: 6, currency: "USD" },
+        priceText: "$0.06",
+        unitPriceText: "16.0 ¢/lb",
+        isEstimate: true,
+      },
+      context: { fulfillment: "delivery", fulfillmentInferred: true },
+    });
+    const tile = Array.from(doc.querySelectorAll('[data-testid="item-stack"] [data-item-id]')).find(
+      (t) => t.querySelector('a[href*="/ip/"]')?.getAttribute("href")?.endsWith("/44390948"),
+    );
+    const block = tile?.querySelector('[data-testid="unified-global-product-price"]');
+    expect(block?.getAttribute("aria-label")).toBe(
+      "Price $ 0.06 each (est.) 16.0 ¢/lb Final cost by weight",
+    );
+    expect(textOf(block)).not.toContain("$0.06");
+    if (block) expect(o?.evidenceHash).toBe(evidenceHash(block));
+  });
+
+  it("reads a reduced-price tile: now price, was price, per-oz unit price, shipping line first", () => {
+    expect(bySku("193164902")).toMatchObject({
+      facts: {
+        price: { amountMinor: 549, currency: "USD" },
+        wasPrice: { amountMinor: 825, currency: "USD" },
+        unitPriceText: "$2.75/oz",
+        isEstimate: false,
+      },
+      context: { fulfillment: "ship", fulfillmentInferred: true },
+    });
+  });
+
+  it("shipping lines are not offers", () => {
+    const tags = new Set(out.observations.flatMap((o) => o.facts.promoTags));
+    for (const tag of tags) expect(tag).not.toMatch(/shipping|arrives/i);
+  });
+
+  it("completes every tile to a schema-valid PriceObservation", () => {
+    for (const [i, o] of out.observations.entries()) {
+      const built = buildObservation(o, {
+        observationId: `00000000-0000-4000-8000-${String(i).padStart(12, "0")}`,
+        panelistId: "0b1c2d3e-4f50-4a61-9b72-83c4d5e6f7a8",
+        observedAt: "2026-09-07T19:08:00.000Z",
+        clientVersion: "0.1.0",
+      });
+      const parsed = PriceObservation.safeParse(built);
+      expect(parsed.success, JSON.stringify(parsed.success ? null : parsed.error.issues)).toBe(
+        true,
+      );
+    }
+  });
+
+  it("stores every tile through captureOnce and counts the page, skips included", async () => {
+    const appended: unknown[] = [];
+    const outcome = await captureOnce(doc, ctxFor(f), {
+      hasConsent: async () => true,
+      append: async (o) => {
+        appended.push(o);
+        return appended.length;
+      },
+      panelistId: async () => "0b1c2d3e-4f50-4a61-9b72-83c4d5e6f7a8",
+      clientVersion: "0.1.0",
+      now: () => new Date("2026-09-07T19:08:00.000Z"),
+      uuid: () => crypto.randomUUID(),
+      adapters: [walmartAdapter],
+    });
+    expect(outcome.status).toBe("listing");
+    if (outcome.status !== "listing") return;
+    expect(outcome.stored.length).toBe(out.observations.length);
+    expect(outcome.url).toBe("https://www.walmart.com/search");
+    const health = withOutcome(emptyHealthState(new Date()), outcome);
+    expect(health.adapters[`walmart@${WALMART_ADAPTER_VERSION}`]).toEqual({
+      attempted: out.observations.length + 1,
+      extracted: out.observations.length,
+      failed: { no_price: 1 },
+    });
   });
 });
 

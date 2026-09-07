@@ -1,8 +1,9 @@
 /**
  * Walmart adapter. Written against fixtures/walmart/* (four product pages at the East Windsor
- * Supercenter, 2026-09-04 snapshots). Product pages only: no fixture shows a Walmart search
- * page or a quick-view modal, so `pageKind` knows the product surface alone and there is no
- * `extractTiles` yet (S12 retro asks Jamie for a listing capture; selectors are not guessed).
+ * Supercenter, 2026-09-04 snapshots) and the search results for "banana" (search-banana,
+ * 2026-09-07). Two surfaces: the product page (`/ip/<slug>/<sku>`) and listings (search
+ * `/search?q=…`, browse `/browse/…`, shop `/shop/…`). No fixture shows a quick-view modal, so
+ * none is handled.
  *
  * The trap the fixture sidecars record: Walmart never renders its store number. The page
  * shows "Pickup from East Windsor Supercenter" and nothing else, so `store` is label-only
@@ -51,6 +52,22 @@
  *                  logged out; neither is unknown.
  *  - zip3:         `[data-testid="depot-store-nudge"]` ("… 08540"), else the global header.
  *                  Fixtures scrub the digits, so on a fixture this is absent.
+ *  - tiles:        `[data-item-id]` inside a `[data-testid="item-stack"]` (the results;
+ *                  `data-item-id` is opaque, the SKU is in the `a[href*="/ip/"]` link). The
+ *                  price block is `[data-testid="unified-global-product-price"]`, whose
+ *                  `aria-label` reads "Price $ 0.06 each (est.) 16.0 ¢/lb Final cost by
+ *                  weight" or "Price $ 5.49 Was $ 8.25 $2.75/oz + $ 3.50 shipping": the first
+ *                  amount is the price, "Was $X" the was-price, "16.0 ¢/lb" / "$2.75/oz" the
+ *                  unit price, "(est.)" the estimate. (The visible digits are split across
+ *                  spans, so the label is the readable form.) The title is
+ *                  `[data-automation-id="product-title"]`; badges
+ *                  (`[data-testid="badgeTagComponent"]`) carry offers ("Rollback") and the
+ *                  "Delivery as soon as …" / "Pickup as soon as …" / "Shipping, arrives …"
+ *                  lines. A listing has no fulfilment radios: a tile's fulfilment is the first
+ *                  line it shows, flagged `fulfillmentInferred`. The store label is the header
+ *                  banner's (`[data-automation-id="fulfillment-banner"]`) last
+ *                  `[data-sensitivity="medium"]` span, "East Windsor Supercenter". Tiles in
+ *                  the related-item carousels outside the stacks are not read.
  */
 import type { Fulfillment, SessionState, StoreRef } from "@pennypincher/schema";
 import {
@@ -59,6 +76,7 @@ import {
   type ExtractResult,
   type PageContext,
   type PageKind,
+  type TileExtraction,
   canonicalUrl,
   fail,
   textOf,
@@ -67,17 +85,23 @@ import {
 import { evidenceHash } from "../evidence";
 import { jsonLdEvidenceHash, productJsonLd } from "../jsonld";
 import { type ParsedMoney, parseMoney } from "../money";
+import { type TileReader, collectTiles } from "../tiles";
 
 export const WALMART_ADAPTER_VERSION = "0.1.0";
 
 const PRODUCT_PATH = /^\/ip\/(?:[^/]+\/)?(\d+)\/?$/;
+const LISTING_PATH = /^\/(?:search|browse|shop)(?:\/|$)/;
+const TILE_UNIT = /(?:\$\s?\d[\d,]*(?:\.\d+)?|\d+(?:\.\d+)?\s?¢)\s*\/\s*(?:fl\s?oz|[a-z]+)/i;
+const TILE_FULFILLMENT = /^(pickup|delivery|shipping)\b/i;
+const TILE_WAS = /\bwas\s+\$\s?(\d[\d,]*(?:\.\d{2})?)/i;
 const REVIEWS_HREF = /^\/reviews\/product\/(\d+)(?:[/?#]|$)/;
 const PICKUP_FROM = /^\s*pickup from\s+(.+?)(?:\s+selected\b.*)?$/i;
 const FROM_LINE = /\b(pickup|delivery)\s+from\s+(.+?)(?:\s*(?:pickup|delivery)\b|\.|$)/i;
 const ESTIMATE = /\(est\.?\)|\bestimated\b|\bfinal cost by weight\b/i;
 const WAS_PRICE = /\bwas\s+(\$\s?\d[\d,]*(?:\.\d{2})?)/i;
+/** Offers, not shipping terms: "Free shipping, arrives …" is not a price promotion. */
 const PROMO =
-  /\b(?:rollback|clearance|reduced|price drop|deal|\d+% off|\$[\d.]+ off|buy \d+,? get|bogo|sale|coupon|free)\b/i;
+  /\b(?:rollback|clearance|reduced|price drop|deal|\d+% off|\$[\d.]+ off|buy \d+,? get|bogo|sale|coupon)\b/i;
 const MEMBER = /walmart\+|\bmembers?\b/i;
 const ZIP = /\b(\d{5})(?:-\d{4})?\b/;
 const NOT_HERO = '[data-test-id="gpt-main"], [data-item-id], li, ul';
@@ -99,7 +123,9 @@ function pageKind(url: string): PageKind | undefined {
   try {
     const u = new URL(url);
     if (!hostMatches(u.hostname)) return undefined;
-    return PRODUCT_PATH.test(u.pathname) ? "product" : undefined;
+    if (PRODUCT_PATH.test(u.pathname)) return "product";
+    if (LISTING_PATH.test(u.pathname)) return "listing";
+    return undefined;
   } catch {
     return undefined;
   }
@@ -149,7 +175,12 @@ function findStore(doc: Document): StoreRef | undefined {
   }
   const m = FROM_LINE.exec(leafText(zone));
   if (m?.[2]) return { label: m[2].trim() };
-  return undefined;
+  // The header banner: "Pickup or delivery? <city> • <store>", the store last.
+  const spans = Array.from(
+    doc.querySelectorAll('[data-automation-id="fulfillment-banner"] [data-sensitivity="medium"]'),
+  );
+  const last = spans.length > 0 ? textOf(spans[spans.length - 1]) : "";
+  return last ? { label: last } : undefined;
 }
 
 interface FulfillmentRead {
@@ -202,6 +233,39 @@ function findBrand(doc: Document): string | undefined {
   const brand = textOf(doc.querySelector('a[data-seo-id="brand-name"]'));
   if (!brand || /^unbranded$/i.test(brand)) return undefined;
   return brand;
+}
+
+/** Everything read once per page and shared by the hero and every tile. */
+interface PageFacts {
+  store: StoreRef | undefined;
+  fulfillment: FulfillmentRead;
+  sessionState: SessionState;
+  zip3: string | undefined;
+}
+
+function readPage(doc: Document, ctx: PageContext): PageFacts {
+  return {
+    store: findStore(doc),
+    fulfillment: findFulfillment(doc, ctx.fulfillment),
+    sessionState: ctx.sessionState ?? findSessionState(doc),
+    zip3: findZip3(doc),
+  };
+}
+
+function contextOf(
+  page: PageFacts,
+  ctx: PageContext,
+  fulfillment: FulfillmentRead,
+): AdapterObservation["context"] {
+  return withDefined({
+    fulfillment: fulfillment.fulfillment,
+    sessionState: page.sessionState,
+    surface: ctx.surface,
+    zip3: page.zip3,
+    device: ctx.device,
+    cleanSession: ctx.cleanSession,
+    fulfillmentInferred: fulfillment.inferred ? true : undefined,
+  });
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -318,7 +382,7 @@ function extractHero(doc: Document, ctx: PageContext): ExtractResult {
     ? readPriceNeighbours(doc, found.read)
     : { promoTags: [], memberPrice: false };
   const isEstimate = found.read ? ESTIMATE.test(found.read.priceLine) : false;
-  const fulfillment = findFulfillment(doc, ctx.fulfillment);
+  const page = readPage(doc, ctx);
 
   const observation: AdapterObservation = {
     retailer: "walmart",
@@ -339,21 +403,102 @@ function extractHero(doc: Document, ctx: PageContext): ExtractResult {
       promoTags: neighbours.promoTags,
       memberPrice: neighbours.memberPrice,
     }),
-    context: withDefined({
-      fulfillment: fulfillment.fulfillment,
-      sessionState: ctx.sessionState ?? findSessionState(doc),
-      surface: ctx.surface,
-      zip3: findZip3(doc),
-      device: ctx.device,
-      cleanSession: ctx.cleanSession,
-      fulfillmentInferred: fulfillment.inferred ? true : undefined,
-    }),
+    context: contextOf(page, ctx, page.fulfillment),
     adapter: `walmart@${WALMART_ADAPTER_VERSION}`,
     evidenceHash: evidence,
   };
-  const store = findStore(doc);
-  if (store) observation.store = store;
+  if (page.store) observation.store = page.store;
   return { ok: true, observation };
+}
+
+// ---------------------------------------------------------------------------------------------
+// Tiles.
+// ---------------------------------------------------------------------------------------------
+
+/** The first fulfilment badge a tile shows, else the page's; a listing has no selection. */
+function tileFulfillment(tile: Element, page: FulfillmentRead): FulfillmentRead {
+  if (!page.inferred) return page;
+  for (const badge of Array.from(tile.querySelectorAll('[data-testid="badgeTagComponent"]'))) {
+    const word = TILE_FULFILLMENT.exec(textOf(badge))?.[1];
+    const f = word ? fulfillmentOf(word) : undefined;
+    if (f) return { fulfillment: f, inferred: true };
+  }
+  return page;
+}
+
+function tileReader(doc: Document, ctx: PageContext): TileReader {
+  const page = readPage(doc, ctx);
+  return {
+    tiles(d) {
+      return Array.from(d.querySelectorAll('[data-testid="item-stack"] [data-item-id]'));
+    },
+    read(tile): ExtractResult {
+      const link = tile.querySelector('a[href*="/ip/"]');
+      const href = link?.getAttribute("href") ?? "";
+      const sku = link ? skuInUrl(href) : undefined;
+      if (!link || !sku) return fail("no_sku");
+      let url: string | undefined;
+      try {
+        url = canonicalUrl(new URL(href, ctx.url).href);
+      } catch {
+        url = undefined;
+      }
+      if (url === undefined) return fail("no_sku");
+
+      const block = tile.querySelector('[data-testid="unified-global-product-price"]');
+      const label = (block?.getAttribute("aria-label") ?? "").replace(/\s+/g, " ").trim();
+      // An empty block is a tile whose price has not rendered (or an item with no price).
+      if (!block || !label) return fail("no_price");
+      const price = parseMoney(label.replace(/^\s*price\s*/i, ""));
+      if (!price) return fail("unparseable_price", label);
+
+      const title =
+        textOf(tile.querySelector('[data-automation-id="product-title"]')) ||
+        textOf(tile.querySelector("h3"));
+      if (!title) return fail("no_title");
+
+      const rest = label.replace(/^\s*price\s*/i, "").replace(/^\$\s?[\d,]+(?:\.\d+)?/, " ");
+      const wasMatch = TILE_WAS.exec(rest);
+      const wasPrice = wasMatch?.[1] ? parseMoney(`$${wasMatch[1]}`) : undefined;
+      const unit = TILE_UNIT.exec(rest.replace(TILE_WAS, " "));
+      const promoTags: string[] = [];
+      let memberPrice = false;
+      for (const badge of Array.from(tile.querySelectorAll('[data-testid="badgeTagComponent"]'))) {
+        const text = textOf(badge);
+        if (!text || text.length > 64) continue;
+        if (PROMO.test(text) && !promoTags.includes(text)) promoTags.push(text);
+        if (MEMBER.test(text)) memberPrice = true;
+      }
+      if (MEMBER.test(label)) memberPrice = true;
+      const fulfillment = tileFulfillment(tile, page.fulfillment);
+
+      const observation: AdapterObservation = {
+        retailer: "walmart",
+        product: withDefined({
+          retailerSku: sku,
+          title,
+          brand: undefined,
+          sizeText: undefined,
+          url,
+          upc: undefined,
+        }),
+        facts: withDefined({
+          price: price.money,
+          priceText: price.priceText,
+          isEstimate: ESTIMATE.test(label),
+          wasPrice: wasPrice?.money,
+          unitPriceText: unit?.[0]?.replace(/\s+/g, " ").trim(),
+          promoTags,
+          memberPrice,
+        }),
+        context: contextOf(page, ctx, fulfillment),
+        adapter: `walmart@${WALMART_ADAPTER_VERSION}`,
+        evidenceHash: evidenceHash(block),
+      };
+      if (page.store) observation.store = page.store;
+      return { ok: true, observation };
+    },
+  };
 }
 
 export const walmartAdapter: Adapter = {
@@ -366,6 +511,13 @@ export const walmartAdapter: Adapter = {
       return extractHero(doc, ctx);
     } catch (e) {
       return fail("adapter_threw", e instanceof Error ? e.message : String(e));
+    }
+  },
+  extractTiles(doc, ctx): TileExtraction {
+    try {
+      return collectTiles(doc, tileReader(doc, ctx));
+    } catch {
+      return { observations: [], skipped: { adapter_threw: 1 } };
     }
   },
 };

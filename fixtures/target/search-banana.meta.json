@@ -1,0 +1,21 @@
+{
+  "retailer": "target",
+  "capturedAt": "2026-09-07T19:05:00Z",
+  "fulfillment": "pickup",
+  "sessionState": "logged_in",
+  "zip3": "085",
+  "store": {
+    "retailerStoreId": "1872",
+    "label": "Durham"
+  },
+  "expected": {
+    "price": {
+      "amountMinor": 29,
+      "currency": "USD"
+    },
+    "priceText": "$0.29",
+    "title": "Fresh Banana - each",
+    "retailerSku": "15013944"
+  },
+  "notes": "Search results for \"banana\" (S12), URL /s?searchTerm=banana, logged in, Durham store selected in the header. Not a product page: 27 [data-test=ListingPageProductListing] tiles in [data-test=ListingPageProductGrid] (each an a[data-test=content] link whose aria-label is the PDP-form title, a $ price in the first text-quill-insert-0 after the cdui markers, an h3 rendered as \"Good & Gather™ Fresh Banana - each\", and Pickup / Delivery lines), plus 46 [data-test=productCardVariantMini] cards (20 inside the grid as an in-grid sponsored carousel, the rest in recommendation carousels) with [data-test=@web/Price/PriceAndPromoMinimal] holding the price, a strikethrough reg price and a \"Sale\" message. No fulfilment cell is selected on a listing; the store id button (#store-name-1872) is not rendered here, only the header label. `expected` is the Fresh Banana tile; its aria-label title is \"Fresh Banana - each - Good & Gather™\". Recorded by the S12 session from Jamie's Chrome tab with Jamie's permission, stripped in-page the way tools/scrub strips, then scrubbed with --name."
+}

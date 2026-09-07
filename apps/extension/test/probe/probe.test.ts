@@ -413,7 +413,9 @@ describe("the probe does not run at all", () => {
 
   it("for garbage or a retailer with no adapter", async () => {
     const fetch = fakeFetch(loggedOut.html);
-    const deps = probeDeps({ fetchPage: fetch.fetchPage });
+    // Every retailer in the schema enum has an adapter since S12; an empty registry keeps the
+    // "no adapter" path exercised (approved by Jamie, 2026-09-07).
+    const deps = probeDeps({ fetchPage: fetch.fetchPage, adapters: [] });
     expect(await probeObservation({ nope: true }, deps)).toEqual({
       status: "skipped",
       reason: "invalid_observation",

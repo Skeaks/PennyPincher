@@ -2,11 +2,12 @@
  * The acceptance test for the Target adapter: every fixture under fixtures/target/ extracts
  * to an observation whose fields match its `.meta.json`. Same shape as instacart.test.ts.
  *
- * All four fixtures are product pages the browser rendered (Durham store, plus the Princeton
- * pair for the logged-out banana). Each renders the store id (`button#store-name-<id>`), a
+ * Four fixtures are product pages the browser rendered (Durham store, plus the Princeton pair
+ * for the logged-out banana). Each renders the store id (`button#store-name-<id>`), a
  * selected Pickup cell, and the hero price twice: in the price module's rich-text span and in
  * the sticky add-to-cart bar's `[data-test="product-price"]`. The lazy-skeleton trap the brief
- * records (an empty `product-price` until scroll) is exercised by emptying the copies.
+ * records (an empty `product-price` until scroll) is exercised by emptying the copies. The
+ * fifth (`search-banana`) is the search results for "banana": a listing, covered below.
  */
 import { PriceObservation } from "@pennypincher/schema";
 import { describe, expect, it } from "vitest";
@@ -20,7 +21,14 @@ import { type Fixture, fragmentDocument, listFixtures, parseDocument } from "./d
 
 const fixtures = listFixtures("target");
 
+const isSearch = (f: Fixture) => f.slug.startsWith("search-");
+const productFixtures = fixtures.filter((f) => !isSearch(f));
+const searchFixture = fixtures.find(isSearch);
+if (!searchFixture) throw new Error("fixture target/search-banana missing");
+const URL_SEARCH = "https://www.target.com/s?searchTerm=banana&facetedValue=abc#results";
+
 function urlFor(f: Fixture): string {
+  if (isSearch(f)) return URL_SEARCH;
   // The real Target URL shape, with query and fragment the adapter must strip.
   return `https://www.target.com/p/${f.slug}/-/A-${f.meta.expected.retailerSku}?preselect=1&lnk=sametab#top`;
 }
@@ -46,12 +54,19 @@ function byslug(slug: string): Fixture {
 }
 
 describe("target adapter against every fixture", () => {
-  it("has at least four fixtures to test against", () => {
-    expect(fixtures.length).toBeGreaterThanOrEqual(4);
+  it("has at least four product fixtures and a search to test against", () => {
+    expect(productFixtures.length).toBeGreaterThanOrEqual(4);
     expect(fixtures.every((f) => f.meta.retailer === "target")).toBe(true);
   });
 
-  for (const f of fixtures) {
+  it("the search fixture is a listing, and the hero extractor says not_product_page", () => {
+    expect(targetAdapter.pageKind(URL_SEARCH)).toBe("listing");
+    expect(
+      targetAdapter.extract(parseDocument(searchFixture.html, URL_SEARCH), ctxFor(searchFixture)),
+    ).toEqual({ ok: false, reason: "not_product_page" });
+  });
+
+  for (const f of productFixtures) {
     describe(f.slug, () => {
       it("matches the product URL as a product surface", () => {
         expect(targetAdapter.matches(urlFor(f))).toBe(true);
@@ -351,23 +366,181 @@ describe("target adapter: matches and pageKind", () => {
   });
 
   it.each([
-    "https://www.target.com/",
     "https://www.target.com/s?searchTerm=bananas",
+    "https://www.target.com/s/bananas",
     "https://www.target.com/c/fresh-fruit-produce-grocery/-/N-5xt1m",
     "https://www.target.com/b/good-gather/-/N-yfqzk",
+  ])("accepts %s as a listing surface", (url) => {
+    expect(targetAdapter.matches(url)).toBe(true);
+    expect(targetAdapter.pageKind(url)).toBe("listing");
+  });
+
+  it.each([
+    "https://www.target.com/",
+    "https://www.target.com/cart",
+    "https://www.target.com/circle",
     "https://www.target.com/p/fresh-banana/-/A-abc",
     "https://www.walmart.com/ip/Fresh-Banana-Each/44390948",
     "https://evil.example/www.target.com/p/x/-/A-1",
     "https://nottarget.com/p/x/-/A-1",
     "not a url",
     "",
-  ])("rejects %s (no listing surface until a fixture shows one)", (url) => {
+  ])("rejects %s", (url) => {
     expect(targetAdapter.matches(url)).toBe(false);
     expect(targetAdapter.pageKind(url)).toBeUndefined();
   });
+});
 
-  it("has no tile extractor yet: no Target listing fixture exists", () => {
-    expect(targetAdapter.extractTiles).toBeUndefined();
+describe("target tiles on the recorded search for banana", () => {
+  const f = searchFixture;
+  const doc = parseDocument(f.html, URL_SEARCH);
+  const out = (() => {
+    if (!targetAdapter.extractTiles) throw new Error("adapter has no tile extractor");
+    return targetAdapter.extractTiles(doc, ctxFor(f));
+  })();
+  const bySku = (sku: string) => out.observations.find((o) => o.product.retailerSku === sku);
+
+  it("reads the results grid tiles and the carousel mini cards, one row per product URL", () => {
+    expect(doc.querySelectorAll('[data-test="ListingPageProductListing"]').length).toBe(27);
+    expect(doc.querySelectorAll('[data-test="productCardVariantMini"]').length).toBe(46);
+    expect(out.observations.length).toBeGreaterThanOrEqual(50);
+    expect(out.skipped).toEqual({});
+    const urls = out.observations.map((o) => o.product.url);
+    expect(new Set(urls).size).toBe(urls.length);
+    for (const o of out.observations) {
+      expect(o.facts.price.amountMinor).toBeGreaterThan(0);
+      expect(o.product.title.length).toBeGreaterThan(0);
+      expect(o.product.url).toMatch(/^https:\/\/www\.target\.com\/p\/.*\/-\/A-\d+$/);
+      expect(o.adapter).toBe(`target@${TARGET_ADAPTER_VERSION}`);
+      expect(o.evidenceHash).toMatch(/^[a-f0-9]{64}$/);
+    }
+  });
+
+  it("reads the sidecar's tile: the banana in product-page title form, priced, pickup inferred, store label only", () => {
+    const o = bySku(f.meta.expected.retailerSku);
+    expect(o).toBeDefined();
+    if (!o) return;
+    expect(o.product.title).toBe("Fresh Banana - each - Good & Gather™");
+    expect(o.product.title).toContain(f.meta.expected.title);
+    expect(o.facts.price).toEqual(f.meta.expected.price);
+    expect(o.facts.priceText).toBe(f.meta.expected.priceText);
+    expect(o.facts.unitPriceText).toBeUndefined();
+    expect(o.facts.promoTags).toEqual([]);
+    expect(o.context).toEqual({
+      fulfillment: "pickup",
+      fulfillmentInferred: true,
+      sessionState: "logged_in",
+      surface: "web",
+      device: "desktop",
+    });
+    // No store-name-<id> button on a listing: the header label alone.
+    expect(doc.querySelector('[id^="store-name-"]')).toBeNull();
+    expect(o.store).toEqual({ label: f.meta.store.label });
+  });
+
+  it("a grid tile wins over the same product's carousel card, and carries the unit price", () => {
+    const o = bySku("85759852");
+    expect(o).toMatchObject({
+      product: { title: "Fresh Organic Bananas - 2lb - Good & Gather™" },
+      facts: { priceText: "$1.79", unitPriceText: "$0.06/ounce", isEstimate: false },
+      context: { fulfillment: "pickup", fulfillmentInferred: true },
+    });
+    const tile = doc.querySelector(
+      '[data-test="ListingPageProductListing"][data-focusid^="85759852"]',
+    );
+    const block = tile?.querySelector('a[data-test="content"] [data-test="text-quill"]');
+    expect(block).not.toBeNull();
+    if (block) expect(o?.evidenceHash).toBe(evidenceHash(block));
+  });
+
+  it("reads a mini card on sale: price, struck-through reg price, the Sale badge, hashed on its price block", () => {
+    const o = bySku("13208903");
+    expect(o).toMatchObject({
+      product: { title: "Fresh Strawberries - 1lb" },
+      facts: {
+        price: { amountMinor: 249, currency: "USD" },
+        priceText: "$2.49",
+        wasPrice: { amountMinor: 299, currency: "USD" },
+        promoTags: ["Sale"],
+      },
+      context: { fulfillment: "ship", fulfillmentInferred: true },
+    });
+    const card = doc.querySelector(
+      '[data-test="productCardVariantMini"][data-product-id="13208903"]',
+    );
+    const block = card?.querySelector('[data-test="@web/Price/PriceAndPromoMinimal"]');
+    expect(block).not.toBeNull();
+    if (block) expect(o?.evidenceHash).toBe(evidenceHash(block));
+  });
+
+  it("shipping lines are not offers", () => {
+    const tags = new Set(out.observations.flatMap((o) => o.facts.promoTags));
+    for (const tag of tags) expect(tag).not.toMatch(/ships free|lactose/i);
+    expect(tags.has("Sale")).toBe(true);
+  });
+
+  it("completes every tile to a schema-valid PriceObservation", () => {
+    for (const [i, o] of out.observations.entries()) {
+      const built = buildObservation(o, {
+        observationId: `00000000-0000-4000-8000-${String(i).padStart(12, "0")}`,
+        panelistId: "0b1c2d3e-4f50-4a61-9b72-83c4d5e6f7a8",
+        observedAt: "2026-09-07T19:05:00.000Z",
+        clientVersion: "0.1.0",
+      });
+      const parsed = PriceObservation.safeParse(built);
+      expect(parsed.success, JSON.stringify(parsed.success ? null : parsed.error.issues)).toBe(
+        true,
+      );
+    }
+  });
+
+  it("stores every tile through captureOnce and counts the page as extracted", async () => {
+    const appended: unknown[] = [];
+    const outcome = await captureOnce(doc, ctxFor(f), {
+      hasConsent: async () => true,
+      append: async (o) => {
+        appended.push(o);
+        return appended.length;
+      },
+      panelistId: async () => "0b1c2d3e-4f50-4a61-9b72-83c4d5e6f7a8",
+      clientVersion: "0.1.0",
+      now: () => new Date("2026-09-07T19:05:00.000Z"),
+      uuid: () => crypto.randomUUID(),
+      adapters: [targetAdapter],
+    });
+    expect(outcome.status).toBe("listing");
+    if (outcome.status !== "listing") return;
+    expect(outcome.stored.length).toBe(out.observations.length);
+    expect(outcome.url).toBe("https://www.target.com/s");
+    const health = withOutcome(emptyHealthState(new Date()), outcome);
+    expect(health.adapters[`target@${TARGET_ADAPTER_VERSION}`]).toEqual({
+      attempted: out.observations.length,
+      extracted: out.observations.length,
+      failed: {},
+    });
+  });
+
+  it("a product whose tiles show no price is counted, not thrown, and the rest still read", () => {
+    const d = parseDocument(f.html, URL_SEARCH);
+    // The banana is in the grid and in the recent-activity carousel: empty both renderings.
+    const copies = Array.from(
+      d.querySelectorAll(
+        '[data-test="ListingPageProductListing"], [data-test="productCardVariantMini"]',
+      ),
+    ).filter((tile) =>
+      tile.querySelector('a[href*="/p/"]')?.getAttribute("href")?.endsWith("/A-15013944"),
+    );
+    expect(copies.length).toBeGreaterThanOrEqual(1);
+    for (const tile of copies) {
+      for (const el of Array.from(tile.querySelectorAll("span"))) {
+        if (/\$\d/.test(el.textContent ?? "")) el.textContent = "";
+      }
+    }
+    if (!targetAdapter.extractTiles) return;
+    const again = targetAdapter.extractTiles(d, ctxFor(f));
+    expect(again.skipped).toEqual({ no_price: copies.length });
+    expect(again.observations.length).toBe(out.observations.length - 1);
+    expect(again.observations.find((o) => o.product.retailerSku === "15013944")).toBeUndefined();
   });
 });
 

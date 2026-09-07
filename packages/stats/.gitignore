@@ -1,0 +1,3 @@
+# mutation-testing output (pnpm mutation)
+.stryker-tmp/
+reports/

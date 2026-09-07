@@ -1,0 +1,14 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "_comment": "Mutation testing for the integrity-critical module. Runs in nightly.yml only, never on the PR gate (CONTRIBUTING.md). `break: null` reports the score without failing the run for the first two weeks (S10 brief, from 2026-09-07); after that set `break` to the observed score minus 5. `low` is the brief's 60% reported threshold.",
+  "plugins": ["@stryker-mutator/vitest-runner"],
+  "testRunner": "vitest",
+  "mutate": ["src/**/*.ts"],
+  "coverageAnalysis": "perTest",
+  "thresholds": { "high": 80, "low": 60, "break": null },
+  "_reporters": "Console only. The html/json reporters write to reports/, which the root Biome config does not ignore and the gate then fails on; enable them once biome.json ignores reports/ (a gate PR).",
+  "reporters": ["clear-text", "progress"],
+  "tempDirName": ".stryker-tmp",
+  "timeoutMS": 60000,
+  "timeoutFactor": 2
+}

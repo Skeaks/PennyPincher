@@ -38,11 +38,17 @@ export interface InsertResult {
   duplicates: number;
 }
 
-/** Storage behind the ingest endpoint. D1 in the Worker, a Map in tests. */
+/** Storage behind the ingest and query endpoints. D1 in the Worker, a Map in tests. */
 export interface ObservationRepo {
   /** Idempotent on observationId. Duplicates are counted, never errors. */
   insertMany(rows: ObservationRow[]): Promise<InsertResult>;
   getById(observationId: string): Promise<ObservationRow | undefined>;
+  /**
+   * Every row of one cell with `observedAt` in `[from, to]`, ascending by `observedAt`. The
+   * query endpoint (S11) reads a 72 h window this way. Implementations may return a few rows
+   * just outside the bounds (D1 compares the ISO strings); the caller re-filters exactly.
+   */
+  listByCell(cellKey: string, from: Date, to: Date): Promise<ObservationRow[]>;
 }
 
 /**

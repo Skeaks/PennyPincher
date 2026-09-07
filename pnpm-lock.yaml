@@ -23,6 +23,9 @@ importers:
       '@pennypincher/schema':
         specifier: workspace:*
         version: link:../../packages/schema
+      '@pennypincher/stats':
+        specifier: workspace:*
+        version: link:../../packages/stats
       hono:
         specifier: 4.13.5
         version: 4.13.5
@@ -30,6 +33,9 @@ importers:
       '@cloudflare/workers-types':
         specifier: 5.20260904.1
         version: 5.20260904.1
+      '@pennypincher/synth':
+        specifier: workspace:*
+        version: link:../../packages/synth
       typescript:
         specifier: 5.7.3
         version: 5.7.3

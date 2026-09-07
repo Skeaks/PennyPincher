@@ -1,6 +1,7 @@
 import { SCHEMA_VERSION, parseObservationBatch } from "@pennypincher/schema";
-import { Hono } from "hono";
+import { type Context, Hono } from "hono";
 import { type ObservationRepo, toRow } from "./repo/observations";
+import { type CellCache, registerCellsRoute } from "./routes/cells";
 
 export interface AppDeps<E> {
   /** Resolve the repo from the Worker bindings per request. Tests hand back a MemoryObservationRepo. */
@@ -13,32 +14,46 @@ export interface AppDeps<E> {
    */
   build?: (env: E) => string | undefined;
   /**
-   * Pilot bearer token from `wrangler secret` (S08). Omitted or empty means the ingest
-   * endpoint is open, which is only right for local dev and tests.
+   * Pilot bearer token from `wrangler secret` (S08). Omitted or empty means both `/v1`
+   * endpoints are open, which is only right for local dev and tests.
    */
   pilotToken?: (env: E) => string | undefined;
+  /**
+   * Edge cache for GET /v1/cells (S11). `caches.default` in the Worker; omitted in tests
+   * unless the test is about caching.
+   */
+  cache?: (env: E) => CellCache | undefined;
 }
 
 /**
- * The ingest API. Bearer-protected when a pilot token is configured; rate limiting in S14.
+ * The ingest and query API. Bearer-protected when a pilot token is configured; rate limiting
+ * in S14.
  *
- *   GET  /healthz          -> 200 { ok, schemaVersion, build }
- *   POST /v1/observations  -> 201 { accepted, duplicates } | 400 { errors: string[] }
- *                             | 401 { errors: ["unauthorized"] } when the bearer is wrong
+ *   GET  /healthz            -> 200 { ok, schemaVersion, build }
+ *   POST /v1/observations    -> 201 { accepted, duplicates } | 400 { errors: string[] }
+ *                               | 401 { errors: ["unauthorized"] } when the bearer is wrong
+ *   GET  /v1/cells/:cellKey  -> 200 CellResponse (see routes/cells.ts) | 400 | 401
  */
 export function createApp<E extends object>(deps: AppDeps<E>) {
   const now = deps.now ?? (() => new Date());
   const app = new Hono<{ Bindings: E }>();
+
+  /** The 401 response when a pilot token is configured and the caller did not present it. */
+  const denied = (c: Context<{ Bindings: E }>): Response | undefined => {
+    const expected = deps.pilotToken?.(c.env);
+    if (expected && !bearerMatches(c.req.header("authorization"), expected)) {
+      return c.json({ errors: ["unauthorized"] }, 401);
+    }
+    return undefined;
+  };
 
   app.get("/healthz", (c) =>
     c.json({ ok: true, schemaVersion: SCHEMA_VERSION, build: deps.build?.(c.env) || "dev" }),
   );
 
   app.post("/v1/observations", async (c) => {
-    const expected = deps.pilotToken?.(c.env);
-    if (expected && !bearerMatches(c.req.header("authorization"), expected)) {
-      return c.json({ errors: ["unauthorized"] }, 401);
-    }
+    const unauthorized = denied(c);
+    if (unauthorized) return unauthorized;
 
     let body: unknown;
     try {
@@ -55,6 +70,13 @@ export function createApp<E extends object>(deps: AppDeps<E>) {
     const rows = parsed.batch.observations.map((o) => toRow(o, receivedAt));
     const result = await deps.repo(c.env).insertMany(rows);
     return c.json(result, 201);
+  });
+
+  registerCellsRoute(app, {
+    repo: deps.repo,
+    now,
+    denied,
+    ...(deps.cache ? { cache: deps.cache } : {}),
   });
 
   app.notFound((c) => c.json({ errors: ["not found"] }, 404));

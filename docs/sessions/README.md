@@ -28,7 +28,7 @@ and do that session."*
 | [S13](S13-product-identity.md) | Product identity | Ingest | S07 | `packages/normalize`: GTIN + size parse + fuzzy match; 100 golden pairs (precision 1.0, recall 0.91); `canonical_id` at ingest. **Done 2026-09-08.** |
 | [S14](S14-ingest-hardening.md) | Ingest hardening + deletion | Ingest | S07 | Rate limits, semantic dedup, abuse flag, 7-day panelist rotation, `DELETE /v1/panelists/:id`, 90-day retention. **Done 2026-09-07.** |
 | [S15](S15-pilot-pack.md) | Pilot pack | Compliance, Web | S06, S11, S14 | Consent v6 enumerating all five requests; claims-word test; privacy policy + consent drafts; Web Store doc + zip; landing + waitlist on Pages. **Done 2026-09-08.** |
-| [S16](S16-closed-pilot.md) | Closed pilot + variance gate | All | S15 | 30 to 60 panelists, one metro, one retailer; go / pivot decision |
+| [S16](S16-closed-pilot.md) | Closed pilot + variance gate | All | S15 | Instrument shipped 2026-09-08 (plan, `tools/pilot-report`, decision rule; Target, zip3 085/086). **Pilot not started: `startDate` null in `docs/pilot/pilot.json`. Verdict PENDING.** |
 
 ## Phase 2 (briefs written after S16's decision)
 

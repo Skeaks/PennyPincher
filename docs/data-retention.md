@@ -2,8 +2,9 @@
 
 What PennyPincher's server stores, for how long, and how a panelist gets it deleted. Written
 in S14; the mechanisms live in `apps/api` (see its README) and `apps/extension/src/identity/`.
-The consent copy (`apps/extension/src/lib/copy.ts`, consent version 5) says the same in plain
-language; if the two ever disagree, fix both in one PR.
+The consent copy (`apps/extension/src/copy/strings.ts`, consent version 6) and the draft
+privacy policy (`docs/compliance/privacy-policy.md`) say the same in plain language; if they
+ever disagree, fix all of them in one PR.
 
 ## What is stored
 
@@ -25,7 +26,8 @@ Three small tables around it (migration 0002):
 
 The panelist id is minted by the extension (`crypto.randomUUID()`), never derived from the
 user or the browser, and **replaced every 7 days**. The extension keeps the current id plus
-the last three retired ones so it can name them for deletion.
+the last twelve retired ones (13 in all, one per rotation of the 90-day retention window) so
+it can name every id the server may still hold for deletion.
 
 ## For how long
 
@@ -65,11 +67,13 @@ The extension's **"Delete my data"** (options page; `src/identity/delete.ts`):
 Without a pilot token in the build nothing was ever uploaded; the extension clears local state
 and says the server was not involved.
 
-Known gap, on purpose: the extension keeps four ids (the brief's number) but the server keeps
-raw rows for 90 days (about 13 rotations). An id older than the fourth rotation whose rows
-have also been pushed out of the local store (5,000-row FIFO) cannot be named for deletion and
-is only covered by the 90-day expiry. Raising `PANELIST_IDS_KEPT` to 13 closes it; that is a
-one-constant change and Jamie's call (S14 retro).
+History: S14 shipped with four ids kept (its brief's number) against a 90-day retention of
+about 13 rotations, so an id older than the fourth rotation whose rows had also left the local
+store (5,000-row FIFO) could only be covered by the 90-day expiry. S15 raised
+`PANELIST_IDS_KEPT` to 13 on the S15 brief's instruction, which closes the gap: every id the
+server can still hold a row under is in the browser's list. A browser that stops rotating for
+more than 90 days (closed, or the extension off) still ends up with ids that have already
+expired server-side, which is harmless: the delete is idempotent.
 
 Uninstalling the extension deletes everything it stored locally (the browser does that) but
 sends nothing to the server; those rows expire at 90 days.

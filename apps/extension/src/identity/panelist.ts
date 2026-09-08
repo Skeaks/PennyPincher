@@ -13,8 +13,13 @@ import { browser } from "wxt/browser";
 export const PANELIST_KEY = "pp:panelist";
 export const PANELIST_HISTORY_KEY = "pp:panelist-history";
 export const PANELIST_ROTATION_MS = 7 * 24 * 60 * 60 * 1000;
-/** Current id plus the last three retired ones. */
-export const PANELIST_IDS_KEPT = 4;
+/**
+ * Current id plus the last twelve retired ones (S15). The server keeps a raw row for 90
+ * days (docs/data-retention.md), which is 13 rotations of 7 days, so every id the server may
+ * still hold a row under can be named for deletion. S14 shipped 4, its brief's number, and
+ * recorded the gap.
+ */
+export const PANELIST_IDS_KEPT = 13;
 
 export interface PanelistRecord {
   id: string;

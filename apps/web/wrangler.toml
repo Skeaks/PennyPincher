@@ -1,0 +1,20 @@
+# PennyPincher landing page and pilot waitlist (S15): a Cloudflare Pages project. The static
+# site is `public/`; `functions/api/waitlist.ts` is the one Pages Function, and the D1 binding
+# below is the one place PennyPincher stores an email address (docs/compliance/privacy-policy.md,
+# "The waitlist"). It is a separate database from the API's observations, on purpose.
+#
+# All non-secret config lives here so a fresh clone deploys correctly (CONTRIBUTING.md). The
+# database_id is an identifier, not a secret. Jamie creates the database once in the
+# Cloudflare dashboard (or `wrangler d1 create pennypincher-waitlist`) and puts its id here;
+# until then `wrangler pages deploy` refuses the binding and the deploy job fails loudly.
+# Local `wrangler pages dev` runs D1 in-process under .wrangler/ (gitignored).
+
+name = "pennypincher-web"
+pages_build_output_dir = "public"
+compatibility_date = "2026-08-01"
+
+[[d1_databases]]
+binding = "WAITLIST_DB"
+database_name = "pennypincher-waitlist"
+database_id = "00000000-0000-0000-0000-000000000000" # TODO(Jamie): the real id, see above
+migrations_dir = "migrations"

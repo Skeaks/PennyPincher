@@ -75,7 +75,8 @@ affected, then the durable one so `main` matches what is live.
 4. Re-run the failed job (Actions > run > Re-run failed jobs) only if the cause was transient
    (Cloudflare or GitHub outage). Migrations are idempotent, so re-running is safe.
 5. Auth errors (`10000`, `Authentication error`): the `CLOUDFLARE_API_TOKEN` repo secret needs
-   the "Edit Cloudflare Workers" template plus D1 Edit. Only Jamie can rotate it.
+   the "Edit Cloudflare Workers" template plus D1 Edit plus Cloudflare Pages Edit (the
+   Pages job, S15). Only Jamie can rotate it.
 
 ## Secrets and config
 

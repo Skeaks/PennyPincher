@@ -1,6 +1,6 @@
 /**
- * Panelist rotation with history (S14): a new id every 7 days, the last four kept, all of
- * them listed for deletion, and the S04 storage shape of the current record unchanged.
+ * Panelist rotation with history (S14, S15): a new id every 7 days, the last thirteen kept, all
+ * of them listed for deletion, and the S04 storage shape of the current record unchanged.
  */
 import { beforeEach, describe, expect, it } from "vitest";
 import { fakeBrowser } from "wxt/testing/fake-browser";
@@ -48,12 +48,13 @@ describe("rotation", () => {
     ]);
   });
 
-  it("keeps the last four ids in all, dropping the oldest", async () => {
-    expect(PANELIST_IDS_KEPT).toBe(4);
+  it("keeps the last thirteen ids in all (one per rotation of the 90-day retention), dropping the oldest", async () => {
+    // S14 shipped 4; S15 raised it to 13 on the brief's instruction and Jamie applied this edit.
+    expect(PANELIST_IDS_KEPT).toBe(13);
     const ids: string[] = [];
-    for (let n = 0; n < 6; n++) ids.push(await getPanelistId(week(n), mint));
-    expect(new Set(ids).size).toBe(6);
-    expect(await listPanelistIds()).toEqual([ids[5], ids[4], ids[3], ids[2]]);
+    for (let n = 0; n < 15; n++) ids.push(await getPanelistId(week(n), mint));
+    expect(new Set(ids).size).toBe(15);
+    expect(await listPanelistIds()).toEqual(ids.slice(2).reverse());
   });
 
   it("a clock step backwards rotates too, and the old id is kept", async () => {

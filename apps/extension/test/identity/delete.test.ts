@@ -146,15 +146,17 @@ describe("deleteMyData end to end", () => {
   it("also deletes ids that only survive on stored rows (older than the identity history)", async () => {
     const api = server();
     const ids: string[] = [];
-    for (let week = 0; week < 6; week++) {
+    // 15 rotations: 13 ids stay in the identity history (S15), the first two survive only on
+    // their stored rows.
+    for (let week = 0; week < 15; week++) {
       ids.push(await capture(new Date(T0.getTime() + week * WEEK), week + 1));
     }
     await api.post(CONFIG, await list());
-    expect((await listPanelistIds()).length).toBe(4);
-    expect(api.panelists().size).toBe(6);
+    expect((await listPanelistIds()).length).toBe(13);
+    expect(api.panelists().size).toBe(15);
 
     const outcome = await deleteMyData(deps({ deletePanelist: api.deletePanelist }));
-    expect(outcome).toEqual({ status: "deleted", ids: 6, serverRows: 6 });
+    expect(outcome).toEqual({ status: "deleted", ids: 15, serverRows: 15 });
     expect(api.panelists().size).toBe(0);
   });
 

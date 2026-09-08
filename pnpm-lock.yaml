@@ -20,6 +20,9 @@ importers:
 
   apps/api:
     dependencies:
+      '@pennypincher/normalize':
+        specifier: workspace:*
+        version: link:../../packages/normalize
       '@pennypincher/schema':
         specifier: workspace:*
         version: link:../../packages/schema
@@ -88,6 +91,19 @@ importers:
       wrangler:
         specifier: 4.129.0
         version: 4.129.0(@cloudflare/workers-types@5.20260904.1)
+
+  packages/normalize:
+    dependencies:
+      '@pennypincher/schema':
+        specifier: workspace:*
+        version: link:../schema
+    devDependencies:
+      '@types/node':
+        specifier: 22.10.5
+        version: 22.10.5
+      zod:
+        specifier: 3.24.1
+        version: 3.24.1
 
   packages/schema:
     dependencies:

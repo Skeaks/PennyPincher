@@ -37,6 +37,18 @@ export class MemoryObservationRepo implements ObservationRepo {
     return this.listWhere((row) => row.panelistId === panelistId, from, to);
   }
 
+  async listByCanonicalCell(
+    canonicalCellKey: string,
+    from: Date,
+    to: Date,
+  ): Promise<ObservationRow[]> {
+    return this.listWhere(
+      (row) => row.canonicalCellKey != null && row.canonicalCellKey === canonicalCellKey,
+      from,
+      to,
+    );
+  }
+
   private listWhere(
     match: (row: ObservationRow) => boolean,
     from: Date,

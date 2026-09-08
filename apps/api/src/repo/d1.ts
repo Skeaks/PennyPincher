@@ -39,6 +39,9 @@ const COLUMNS: ReadonlyArray<readonly [string, (r: ObservationRow) => Bindable]>
   ["cell_key", (r) => r.cellKey],
   ["raw_json", (r) => r.rawJson],
   ["received_at", (r) => r.receivedAt],
+  // S13 (migration 0003): absent on a row built without a products repo, stored as NULL.
+  ["canonical_id", (r) => r.canonicalId ?? null],
+  ["canonical_cell_key", (r) => r.canonicalCellKey ?? null],
 ];
 
 export const OBSERVATION_COLUMNS: readonly string[] = COLUMNS.map(([name]) => name);
@@ -59,6 +62,9 @@ export const SELECT_BY_CELL_SQL = `SELECT ${OBSERVATION_COLUMNS.join(", ")} FROM
 
 /** Same shape on the (panelist_id, observed_at) index from migration 0002 (S14). */
 export const SELECT_BY_PANELIST_SQL = `SELECT ${OBSERVATION_COLUMNS.join(", ")} FROM observations WHERE panelist_id = ?1 AND observed_at >= ?2 AND observed_at <= ?3 ORDER BY observed_at`;
+
+/** Same shape on the (canonical_cell_key, observed_at) index from migration 0003 (S13). */
+export const SELECT_BY_CANONICAL_CELL_SQL = `SELECT ${OBSERVATION_COLUMNS.join(", ")} FROM observations WHERE canonical_cell_key = ?1 AND observed_at >= ?2 AND observed_at <= ?3 ORDER BY observed_at`;
 
 const BOUND_SLACK_MS = 1_000;
 
@@ -124,6 +130,8 @@ interface DbRecord {
   cell_key: string;
   raw_json: string;
   received_at: string;
+  canonical_id: string | null;
+  canonical_cell_key: string | null;
 }
 
 function fromRecord(d: DbRecord): ObservationRow {
@@ -152,6 +160,8 @@ function fromRecord(d: DbRecord): ObservationRow {
     cellKey: d.cell_key,
     rawJson: d.raw_json,
     receivedAt: d.received_at,
+    canonicalId: d.canonical_id ?? null,
+    canonicalCellKey: d.canonical_cell_key ?? null,
   };
 }
 
@@ -209,6 +219,14 @@ export class D1ObservationRepo implements ObservationRepo {
 
   async listByPanelist(panelistId: string, from: Date, to: Date): Promise<ObservationRow[]> {
     return this.listRange(SELECT_BY_PANELIST_SQL, panelistId, from, to);
+  }
+
+  async listByCanonicalCell(
+    canonicalCellKey: string,
+    from: Date,
+    to: Date,
+  ): Promise<ObservationRow[]> {
+    return this.listRange(SELECT_BY_CANONICAL_CELL_SQL, canonicalCellKey, from, to);
   }
 
   private async listRange(

@@ -18,6 +18,7 @@ import {
   windowStart,
 } from "./ingest/ratelimit";
 import { type ObservationRepo, type ObservationRow, toRow } from "./repo/observations";
+import { type ProductsRepo, resolveIdentities, skuKey } from "./repo/products";
 import { type AdapterHealthRepo, registerAdapterHealthRoutes } from "./routes/adapter-health";
 import { type CellCache, registerCellsRoute } from "./routes/cells";
 import { registerPanelistsRoute } from "./routes/panelists";
@@ -49,6 +50,12 @@ export interface AppDeps<E> {
   adapterHealth?: (env: E) => AdapterHealthRepo;
   /** Structured log sink (S14): abuse flags, deletions, purges. `console.log` in the Worker. */
   log?: (line: string) => void;
+  /**
+   * Product identity storage (S13). D1 in the Worker; a memory repo in tests. Omitted means
+   * rows are stored with no canonical id (NULL), which is only right for tests that are not
+   * about identity.
+   */
+  products?: (env: E) => ProductsRepo;
 }
 
 /**
@@ -101,7 +108,15 @@ export function createApp<E extends object>(deps: AppDeps<E>) {
 
     const at = now();
     const receivedAt = at.toISOString();
-    const rows = parsed.batch.observations.map((o) => toRow(o, receivedAt));
+    // Product identity (S13): one resolution per distinct (retailer, SKU) in the batch,
+    // before the rows are built so every row carries canonical_id and canonical_cell_key.
+    const products = deps.products?.(c.env);
+    const identities = products
+      ? await resolveIdentities(products, parsed.batch.observations, receivedAt)
+      : undefined;
+    const rows = parsed.batch.observations.map((o) =>
+      toRow(o, receivedAt, identities?.get(skuKey(o.retailer, o.product.retailerSku))),
+    );
     const repo = deps.repo(c.env);
 
     // Rate limit: 1,000 rows an hour per bearer and per panelistId, fixed windows. Checked

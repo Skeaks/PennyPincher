@@ -2,11 +2,13 @@ import { createApp } from "./app";
 import type { Env } from "./env";
 import { D1AdapterHealthRepo } from "./repo/adapter-health-d1";
 import { D1ObservationRepo } from "./repo/d1";
+import { D1ProductsRepo } from "./repo/products-d1";
 import { runRetention } from "./retention";
 
 /** Worker entry. wrangler.toml points `main` here; the Hono app exposes `fetch`. */
 const app = createApp<Env>({
   repo: (env) => new D1ObservationRepo(env.DB),
+  products: (env) => new D1ProductsRepo(env.DB),
   build: (env) => env.BUILD_SHA,
   pilotToken: (env) => env.PILOT_TOKEN,
   // The Workers cache API: GET /v1/cells answers live here for CELL_CACHE_SECONDS.

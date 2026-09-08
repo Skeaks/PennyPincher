@@ -1,0 +1,1871 @@
+{
+  "$comment": "Hand-labelled product pairs for @pennypincher/normalize (S13). Human-owned: agents never edit this file. Labels were PROPOSED by the S13 session from fixture product pages and search tiles (source: fixture:<path>) plus composed variants (source: composed). Jamie reviews by editing label/note and setting status to reviewed. test/golden.test.ts gates precision on same at 0.97.",
+  "status": "proposed",
+  "labelledBy": "S13 session (proposed labels); awaiting Jamie's review",
+  "pairs": [
+    {
+      "id": "p001",
+      "label": "same",
+      "a": {
+        "retailer": "target",
+        "retailerSku": "15013944",
+        "title": "Fresh Banana - each - Good & Gather™",
+        "brand": "Good & Gather",
+        "source": "fixture:fixtures/target/banana-each.html"
+      },
+      "b": {
+        "retailer": "target",
+        "retailerSku": "15013944",
+        "title": "Good & Gather™ Fresh Banana - each",
+        "source": "fixture:fixtures/target/search-banana.html"
+      },
+      "note": "Target product page title vs the search tile h3 form of the same SKU."
+    },
+    {
+      "id": "p002",
+      "label": "same",
+      "a": {
+        "retailer": "target",
+        "retailerSku": "15013944",
+        "title": "Fresh Banana - each - Good & Gather™",
+        "brand": "Good & Gather",
+        "source": "fixture:fixtures/target/banana-each.html"
+      },
+      "b": {
+        "retailer": "walmart",
+        "retailerSku": "44390948",
+        "title": "Fresh Banana, Each",
+        "source": "fixture:fixtures/walmart/fresh-banana-each.html"
+      },
+      "note": "Generic produce across retailers: a single banana. Good & Gather is Target's produce label, not a different fruit."
+    },
+    {
+      "id": "p003",
+      "label": "same",
+      "a": {
+        "retailer": "target",
+        "retailerSku": "15013944",
+        "title": "Fresh Banana - each - Good & Gather™",
+        "brand": "Good & Gather",
+        "source": "fixture:fixtures/target/banana-each.html"
+      },
+      "b": {
+        "retailer": "instacart",
+        "store": "Wegmans",
+        "retailerSku": "2748189",
+        "title": "Bananas, Sold by the Each",
+        "source": "fixture:fixtures/instacart/wegmans-bananas.html"
+      },
+      "note": "Generic produce across retailers: a single banana."
+    },
+    {
+      "id": "p004",
+      "label": "same",
+      "a": {
+        "retailer": "walmart",
+        "retailerSku": "44390948",
+        "title": "Fresh Banana, Each",
+        "source": "fixture:fixtures/walmart/fresh-banana-each.html"
+      },
+      "b": {
+        "retailer": "instacart",
+        "store": "Wegmans",
+        "retailerSku": "2748189",
+        "title": "Bananas, Sold by the Each",
+        "source": "fixture:fixtures/instacart/wegmans-bananas.html"
+      },
+      "note": "Generic produce across retailers: a single banana."
+    },
+    {
+      "id": "p005",
+      "label": "same",
+      "a": {
+        "retailer": "instacart",
+        "store": "Walmart",
+        "retailerSku": "20654983",
+        "title": "Great Value Whole Vitamin D Milk",
+        "sizeText": "1 gal",
+        "source": "fixture:fixtures/instacart/walmart-whole-milk-1gal-anonymous-fetch-logged-out.html",
+        "brand": "great value"
+      },
+      "b": {
+        "retailer": "instacart",
+        "store": "Walmart",
+        "retailerSku": "20654983",
+        "title": "Great Value Whole Vitamin D Milk",
+        "sizeText": "1 gal",
+        "source": "fixture:fixtures/instacart/walmart-whole-milk-1gal-modal.html"
+      },
+      "note": "Instacart hero page (with brand link and size) vs the product modal, same SKU."
+    },
+    {
+      "id": "p006",
+      "label": "same",
+      "a": {
+        "retailer": "instacart",
+        "store": "Walmart",
+        "retailerSku": "20654983",
+        "title": "Great Value Whole Vitamin D Milk",
+        "sizeText": "1 gal",
+        "source": "fixture:fixtures/instacart/walmart-whole-milk-1gal-anonymous-fetch-logged-out.html",
+        "brand": "great value"
+      },
+      "b": {
+        "retailer": "instacart",
+        "title": "Great Value Milk, Vitamin D, Whole",
+        "brand": "Great Value",
+        "sizeText": "1 gal",
+        "source": "composed"
+      },
+      "note": "Reordered title in the JSON-LD form of the same page."
+    },
+    {
+      "id": "p007",
+      "label": "same",
+      "a": {
+        "retailer": "instacart",
+        "store": "Walmart",
+        "retailerSku": "20654983",
+        "title": "Great Value Whole Vitamin D Milk",
+        "sizeText": "1 gal",
+        "source": "fixture:fixtures/instacart/walmart-whole-milk-1gal-anonymous-fetch-logged-out.html",
+        "brand": "great value"
+      },
+      "b": {
+        "retailer": "walmart",
+        "title": "Great Value Whole Vitamin D Milk, Gallon, 128 fl oz",
+        "source": "composed"
+      },
+      "note": "Walmart's own listing form of the Instacart Walmart item: 1 gal = 128 fl oz."
+    },
+    {
+      "id": "p008",
+      "label": "same",
+      "a": {
+        "retailer": "instacart",
+        "store": "Walmart",
+        "retailerSku": "20655081",
+        "title": "Great Value Vitamin D Whole Milk",
+        "sizeText": "0.5 gal",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      },
+      "b": {
+        "retailer": "walmart",
+        "title": "Great Value Whole Vitamin D Milk, Half Gallon, 64 fl oz",
+        "source": "composed"
+      },
+      "note": "0.5 gal = half gallon = 64 fl oz; words reordered."
+    },
+    {
+      "id": "p009",
+      "label": "same",
+      "a": {
+        "retailer": "instacart",
+        "store": "Walmart",
+        "retailerSku": "1343109",
+        "title": "fairlife Whole Ultra-Filtered Milk, Lactose Free",
+        "sizeText": "52 fl oz",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      },
+      "b": {
+        "retailer": "instacart",
+        "store": "Giant Food Stores",
+        "retailerSku": "1343109",
+        "title": "fairlife Whole Ultra-Filtered Milk, Lactose Free",
+        "sizeText": "52 fl oz",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      },
+      "note": "Same Instacart item id under two banners."
+    },
+    {
+      "id": "p010",
+      "label": "same",
+      "a": {
+        "retailer": "instacart",
+        "store": "Giant Food Stores",
+        "retailerSku": "1343109",
+        "title": "fairlife Whole Ultra-Filtered Milk, Lactose Free",
+        "sizeText": "52 fl oz",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      },
+      "b": {
+        "retailer": "instacart",
+        "store": "Stop & Shop",
+        "retailerSku": "1343109",
+        "title": "fairlife Whole Ultra-Filtered Milk, Lactose Free",
+        "sizeText": "52 fl oz",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      },
+      "note": "Same Instacart item id under two banners."
+    },
+    {
+      "id": "p011",
+      "label": "same",
+      "a": {
+        "retailer": "instacart",
+        "store": "Walmart",
+        "retailerSku": "1343109",
+        "title": "fairlife Whole Ultra-Filtered Milk, Lactose Free",
+        "sizeText": "52 fl oz",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      },
+      "b": {
+        "retailer": "target",
+        "title": "Fairlife Lactose-Free Whole Ultra-Filtered Milk - 52 fl oz",
+        "brand": "fairlife",
+        "source": "composed"
+      },
+      "note": "Target-form title with brand field."
+    },
+    {
+      "id": "p012",
+      "label": "same",
+      "a": {
+        "retailer": "instacart",
+        "store": "Giant Food Stores",
+        "retailerSku": "17090519",
+        "title": "Lehigh Valley Dairy Farms Milk, Whole, Vitamin D",
+        "sizeText": "1 gal",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      },
+      "b": {
+        "retailer": "instacart",
+        "store": "Stop & Shop",
+        "retailerSku": "17090519",
+        "title": "Lehigh Valley Dairy Farms Milk, Whole, Vitamin D",
+        "sizeText": "1 gal",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      }
+    },
+    {
+      "id": "p013",
+      "label": "same",
+      "a": {
+        "retailer": "instacart",
+        "store": "Giant Food Stores",
+        "retailerSku": "144985",
+        "title": "Lehigh Valley Dairy Farms Milk, 2% Reduced Fat",
+        "sizeText": "1 gal",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      },
+      "b": {
+        "retailer": "instacart",
+        "store": "Stop & Shop",
+        "retailerSku": "144985",
+        "title": "Lehigh Valley Dairy Farms Milk, 2% Reduced Fat",
+        "sizeText": "1 gal",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      }
+    },
+    {
+      "id": "p014",
+      "label": "same",
+      "a": {
+        "retailer": "instacart",
+        "store": "Giant Food Stores",
+        "retailerSku": "3192238",
+        "title": "Store Brand Whole Milk",
+        "sizeText": "1 gal",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      },
+      "b": {
+        "retailer": "instacart",
+        "store": "Stop & Shop",
+        "retailerSku": "3192238",
+        "title": "Store Brand Whole Milk",
+        "sizeText": "1 gal",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      },
+      "note": "Ahold banners share item ids; 'Store Brand' is the same private label."
+    },
+    {
+      "id": "p015",
+      "label": "same",
+      "a": {
+        "retailer": "instacart",
+        "store": "Giant Food Stores",
+        "retailerSku": "3139166",
+        "title": "Store Brand Whole Milk",
+        "sizeText": "0.5 gal",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      },
+      "b": {
+        "retailer": "instacart",
+        "store": "Stop & Shop",
+        "retailerSku": "3139166",
+        "title": "Store Brand Whole Milk",
+        "sizeText": "0.5 gal",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      }
+    },
+    {
+      "id": "p016",
+      "label": "same",
+      "a": {
+        "retailer": "instacart",
+        "store": "Giant Food Stores",
+        "retailerSku": "3139165",
+        "title": "Store Brand Reduced Fat Milk",
+        "sizeText": "1 gal",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      },
+      "b": {
+        "retailer": "instacart",
+        "store": "Stop & Shop",
+        "retailerSku": "3139165",
+        "title": "Store Brand Reduced Fat Milk",
+        "sizeText": "1 gal",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      }
+    },
+    {
+      "id": "p017",
+      "label": "same",
+      "a": {
+        "retailer": "instacart",
+        "store": "Giant Food Stores",
+        "retailerSku": "3139171",
+        "title": "Store Brand Reduced Fat Milk",
+        "sizeText": "0.5 gal",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      },
+      "b": {
+        "retailer": "instacart",
+        "store": "Stop & Shop",
+        "retailerSku": "3139171",
+        "title": "Store Brand Reduced Fat Milk",
+        "sizeText": "0.5 gal",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      }
+    },
+    {
+      "id": "p018",
+      "label": "same",
+      "a": {
+        "retailer": "instacart",
+        "store": "Giant Food Stores",
+        "retailerSku": "17001281",
+        "title": "Store Brand Whole Milk",
+        "sizeText": "1 qt",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      },
+      "b": {
+        "retailer": "instacart",
+        "store": "Stop & Shop",
+        "retailerSku": "17001281",
+        "title": "Store Brand Whole Milk",
+        "sizeText": "1 qt",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      }
+    },
+    {
+      "id": "p019",
+      "label": "same",
+      "a": {
+        "retailer": "instacart",
+        "store": "Giant Food Stores",
+        "retailerSku": "3194947",
+        "title": "Store Brand Low Fat Milk",
+        "sizeText": "0.5 gal",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      },
+      "b": {
+        "retailer": "instacart",
+        "store": "Stop & Shop",
+        "retailerSku": "3194947",
+        "title": "Store Brand Low Fat Milk",
+        "sizeText": "0.5 gal",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      }
+    },
+    {
+      "id": "p020",
+      "label": "same",
+      "a": {
+        "retailer": "instacart",
+        "store": "Walmart",
+        "title": "Lactaid Whole Milk",
+        "sizeText": "96 fl oz",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      },
+      "b": {
+        "retailer": "instacart",
+        "store": "Stop & Shop",
+        "title": "Lactaid Whole Milk",
+        "sizeText": "96 fl oz",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      }
+    },
+    {
+      "id": "p021",
+      "label": "same",
+      "a": {
+        "retailer": "instacart",
+        "store": "Walmart",
+        "title": "Horizon Organic Whole Milk, 64 fl oz Half Gallon Carton",
+        "sizeText": "64 fl oz",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      },
+      "b": {
+        "retailer": "target",
+        "title": "Horizon Organic Whole Milk - 0.5gal",
+        "brand": "Horizon Organic",
+        "source": "composed"
+      },
+      "note": "64 fl oz half gallon carton vs 0.5gal."
+    },
+    {
+      "id": "p022",
+      "label": "same",
+      "a": {
+        "retailer": "walmart",
+        "retailerSku": "14336395",
+        "title": "Great Value Sliced Bananas, 16 oz Bag",
+        "source": "fixture:fixtures/walmart/great-value-sliced-bananas-frozen-16oz.html"
+      },
+      "b": {
+        "retailer": "instacart",
+        "title": "Great Value Sliced Bananas",
+        "sizeText": "16 oz",
+        "store": "Walmart",
+        "source": "composed"
+      },
+      "note": "Instacart tile form of the Walmart frozen item."
+    },
+    {
+      "id": "p023",
+      "label": "same",
+      "a": {
+        "retailer": "target",
+        "retailerSku": "85759852",
+        "title": "Fresh Organic Bananas - 2lb - Good & Gather™",
+        "brand": "Good & Gather",
+        "source": "fixture:fixtures/target/organic-bananas-2lb.html"
+      },
+      "b": {
+        "retailer": "target",
+        "retailerSku": "85759852",
+        "title": "Good & Gather™ Fresh Organic Bananas - 2lb",
+        "source": "fixture:fixtures/target/search-banana.html"
+      },
+      "note": "Product page vs tile h3 form."
+    },
+    {
+      "id": "p024",
+      "label": "same",
+      "a": {
+        "retailer": "target",
+        "retailerSku": "81957708",
+        "title": "Hass Avocados - 4ct - Good & Gather™",
+        "brand": "Good & Gather",
+        "source": "fixture:fixtures/target/hass-avocados-4ct.html"
+      },
+      "b": {
+        "retailer": "target",
+        "title": "Good & Gather™ Hass Avocados - 4ct",
+        "source": "composed"
+      },
+      "note": "Tile h3 form."
+    },
+    {
+      "id": "p025",
+      "label": "same",
+      "a": {
+        "retailer": "target",
+        "retailerSku": "85759852",
+        "title": "Fresh Organic Bananas - 2lb - Good & Gather™",
+        "brand": "Good & Gather",
+        "source": "fixture:fixtures/target/organic-bananas-2lb.html"
+      },
+      "b": {
+        "retailer": "instacart",
+        "title": "Organic Bananas, Bag",
+        "sizeText": "2 lb",
+        "store": "Wegmans",
+        "source": "composed"
+      },
+      "note": "A 2 lb bag of organic bananas at another retailer. Expected to be missed by the fuzzy matcher (few shared tokens); kept for recall."
+    },
+    {
+      "id": "p026",
+      "label": "same",
+      "a": {
+        "retailer": "walmart",
+        "retailerSku": "19316063089",
+        "title": "Kauffman Orchards Freeze-Dried Banana Slices- 1.5 Ounce Bag",
+        "source": "fixture:fixtures/walmart/search-banana.html"
+      },
+      "b": {
+        "retailer": "target",
+        "title": "Kauffman Orchards Freeze Dried Banana Slices - 1.5oz",
+        "brand": "Kauffman Orchards",
+        "source": "composed"
+      }
+    },
+    {
+      "id": "p027",
+      "label": "same",
+      "a": {
+        "retailer": "walmart",
+        "retailerSku": "2664639940",
+        "title": "CRISPY GREEN Freeze Dried Banana, 3.39 OZ",
+        "source": "fixture:fixtures/walmart/search-banana.html"
+      },
+      "b": {
+        "retailer": "target",
+        "title": "Crispy Green Freeze-Dried Bananas - 3.39oz",
+        "brand": "Crispy Green",
+        "source": "composed"
+      }
+    },
+    {
+      "id": "p028",
+      "label": "same",
+      "a": {
+        "retailer": "walmart",
+        "retailerSku": "133275367",
+        "title": "Made in Nature Organic Dried Banana Slices, 4 oz",
+        "source": "fixture:fixtures/walmart/search-banana.html"
+      },
+      "b": {
+        "retailer": "target",
+        "title": "Made In Nature Organic Dried Banana Slices - 4oz",
+        "brand": "Made In Nature",
+        "source": "composed"
+      }
+    },
+    {
+      "id": "p029",
+      "label": "same",
+      "a": {
+        "retailer": "walmart",
+        "retailerSku": "163092222",
+        "title": "Simple Kitchen Freeze-Dried Sliced Bananas, 1.6 oz",
+        "source": "fixture:fixtures/walmart/search-banana.html"
+      },
+      "b": {
+        "retailer": "instacart",
+        "title": "Simple Kitchen Sliced Bananas Freeze Dried",
+        "sizeText": "1.6 oz",
+        "store": "Wegmans",
+        "source": "composed"
+      }
+    },
+    {
+      "id": "p030",
+      "label": "same",
+      "a": {
+        "retailer": "walmart",
+        "retailerSku": "19635823825",
+        "title": "Tesco Chewy Dried Banana 200G, Imported from Britain",
+        "source": "fixture:fixtures/walmart/search-banana.html"
+      },
+      "b": {
+        "retailer": "instacart",
+        "title": "Tesco Chewy Dried Banana",
+        "sizeText": "7.05 oz",
+        "store": "Wegmans",
+        "source": "composed"
+      },
+      "note": "200 g = 7.05 oz. Title tokens overlap exactly at the threshold."
+    },
+    {
+      "id": "p031",
+      "label": "same",
+      "a": {
+        "retailer": "target",
+        "retailerSku": "53519961",
+        "title": "Extra Large Bi-Color Seedless Grapes - 2lb",
+        "source": "fixture:fixtures/target/search-banana.html"
+      },
+      "b": {
+        "retailer": "walmart",
+        "title": "Extra Large Bi-Color Seedless Grapes, 32 oz",
+        "source": "composed"
+      },
+      "note": "2 lb = 32 oz."
+    },
+    {
+      "id": "p032",
+      "label": "same",
+      "a": {
+        "retailer": "target",
+        "retailerSku": "95016442",
+        "title": "Strawberry Banana Pouch - 3.5 oz - Good & Gather™",
+        "brand": "Good & Gather",
+        "source": "fixture:fixtures/target/search-banana.html"
+      },
+      "b": {
+        "retailer": "target",
+        "title": "Good & Gather™ Strawberry Banana Pouch - 3.5oz",
+        "source": "composed"
+      },
+      "note": "Tile h3 form."
+    },
+    {
+      "id": "p033",
+      "label": "same",
+      "a": {
+        "retailer": "walmart",
+        "retailerSku": "137862727",
+        "title": "Great Value Strawberry Banana Blend, 48 oz (Frozen)",
+        "source": "fixture:fixtures/walmart/search-banana.html"
+      },
+      "b": {
+        "retailer": "instacart",
+        "title": "Great Value Frozen Strawberry Banana Blend",
+        "sizeText": "48 oz",
+        "store": "Walmart",
+        "source": "composed"
+      }
+    },
+    {
+      "id": "p034",
+      "label": "same",
+      "a": {
+        "retailer": "instacart",
+        "store": "Wegmans",
+        "retailerSku": "34780662",
+        "title": "Wegmans Red Seedless Grapes, Bagged",
+        "source": "fixture:fixtures/instacart/wegmans-red-seedless-grapes.html"
+      },
+      "b": {
+        "retailer": "instacart",
+        "title": "Wegmans Red Seedless Grapes",
+        "sizeText": "per lb",
+        "store": "Wegmans",
+        "source": "composed"
+      },
+      "note": "Tile form drops 'Bagged'."
+    },
+    {
+      "id": "p035",
+      "label": "same",
+      "a": {
+        "retailer": "instacart",
+        "store": "Wegmans",
+        "retailerSku": "17327037",
+        "title": "Organic Strawberries",
+        "sizeText": "16 oz",
+        "source": "fixture:fixtures/instacart/wegmans-organic-strawberries-16oz.html"
+      },
+      "b": {
+        "retailer": "target",
+        "title": "Organic Strawberries - 1lb",
+        "source": "composed"
+      },
+      "note": "16 oz = 1 lb."
+    },
+    {
+      "id": "p036",
+      "label": "same",
+      "a": {
+        "retailer": "instacart",
+        "store": "Wegmans",
+        "retailerSku": "2748189",
+        "title": "Bananas, Sold by the Each",
+        "source": "fixture:fixtures/instacart/wegmans-bananas.html"
+      },
+      "b": {
+        "retailer": "instacart",
+        "title": "Banana",
+        "store": "Wegmans",
+        "source": "composed"
+      },
+      "note": "Tile 'Add 1 ct Banana' button form."
+    },
+    {
+      "id": "p037",
+      "label": "same",
+      "a": {
+        "retailer": "walmart",
+        "title": "Great Value Whole Vitamin D Milk, Gallon",
+        "upc": "078742351001",
+        "source": "composed"
+      },
+      "b": {
+        "retailer": "target",
+        "title": "Whole Milk Gallon",
+        "upc": "078742351001",
+        "source": "composed"
+      },
+      "note": "Same UPC-A; titles deliberately dissimilar."
+    },
+    {
+      "id": "p038",
+      "label": "same",
+      "a": {
+        "retailer": "walmart",
+        "title": "Great Value Whole Vitamin D Milk, Gallon",
+        "upc": "078742351001",
+        "source": "composed"
+      },
+      "b": {
+        "retailer": "instacart",
+        "title": "Great Value Milk",
+        "upc": "0078742351001",
+        "source": "composed"
+      },
+      "note": "UPC-A vs the same code as EAN-13."
+    },
+    {
+      "id": "p039",
+      "label": "same",
+      "a": {
+        "retailer": "walmart",
+        "title": "Great Value Whole Vitamin D Milk, Gallon",
+        "upc": "078742351001",
+        "source": "composed"
+      },
+      "b": {
+        "retailer": "target",
+        "title": "GV Milk",
+        "upc": "00078742351001",
+        "source": "composed"
+      },
+      "note": "UPC-A vs GTIN-14."
+    },
+    {
+      "id": "p040",
+      "label": "same",
+      "a": {
+        "retailer": "walmart",
+        "title": "Sample Item",
+        "upc": "01234523",
+        "source": "composed"
+      },
+      "b": {
+        "retailer": "target",
+        "title": "Sample Item",
+        "upc": "012200003453",
+        "source": "composed"
+      },
+      "note": "UPC-E vs its UPC-A expansion."
+    },
+    {
+      "id": "p041",
+      "label": "same",
+      "a": {
+        "retailer": "walmart",
+        "title": "Great Value Whole Vitamin D Milk",
+        "upc": "07874235100",
+        "source": "composed"
+      },
+      "b": {
+        "retailer": "target",
+        "title": "Great Value Whole Vitamin D Milk",
+        "source": "composed"
+      },
+      "note": "Invalid UPC (11 digits) on one side: falls back to fuzzy."
+    },
+    {
+      "id": "p042",
+      "label": "same",
+      "a": {
+        "retailer": "walmart",
+        "retailerSku": "20667000331",
+        "title": "Bananas Bunch Lifelike Banana Cluster Decoration Fruits Bananas Model Photography Props Kitchen Party Decoration",
+        "source": "fixture:fixtures/walmart/search-banana.html"
+      },
+      "b": {
+        "retailer": "walmart",
+        "retailerSku": "20297006379",
+        "title": "Bananas Bunch Lifelike Banana Cluster Decoration Fruits Bananas Model Photography Props Kitchen Party Decoration",
+        "source": "fixture:fixtures/walmart/search-banana.html"
+      },
+      "note": "Identical marketplace titles under two listing ids. Labeller cannot tell them apart; treated as one product."
+    },
+    {
+      "id": "p043",
+      "label": "same",
+      "a": {
+        "retailer": "walmart",
+        "retailerSku": "20607365160",
+        "title": "BANACO Premium Dried Whole Bananas 100% Natural, No Added Sugar, Healthy Chewy Snack",
+        "source": "fixture:fixtures/walmart/search-banana.html"
+      },
+      "b": {
+        "retailer": "walmart",
+        "retailerSku": "20619017149",
+        "title": "BANACO Premium Dried Whole Bananas – 100% Natural, No Added Sugar, Healthy Chewy Snack",
+        "source": "fixture:fixtures/walmart/search-banana.html"
+      },
+      "note": "Same title bar an en dash; the second is the 'Options from' parent listing."
+    },
+    {
+      "id": "p044",
+      "label": "same",
+      "a": {
+        "retailer": "walmart",
+        "retailerSku": "9031061887",
+        "title": "Mavuno Harvest, Organic Dried Banana, 2 oz (56 g) Pack of 2",
+        "source": "fixture:fixtures/walmart/search-banana.html"
+      },
+      "b": {
+        "retailer": "target",
+        "title": "Mavuno Harvest Organic Dried Bananas 2 oz - 2 Pack",
+        "brand": "Mavuno Harvest",
+        "source": "composed"
+      }
+    },
+    {
+      "id": "p045",
+      "label": "same",
+      "a": {
+        "retailer": "instacart",
+        "store": "Walmart",
+        "title": "Lactaid 2% Reduced Fat Milk",
+        "sizeText": "64 fl oz",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      },
+      "b": {
+        "retailer": "target",
+        "title": "Lactaid 2% Reduced Fat Milk - 64 fl oz",
+        "brand": "Lactaid",
+        "source": "composed"
+      }
+    },
+    {
+      "id": "p046",
+      "label": "same",
+      "a": {
+        "retailer": "instacart",
+        "store": "ALDI",
+        "retailerSku": "16902710",
+        "title": "Friendly Farms Whole Milk",
+        "sizeText": "1 gal",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      },
+      "b": {
+        "retailer": "instacart",
+        "title": "Friendly Farms Whole Milk, 1 Gallon",
+        "store": "ALDI",
+        "source": "composed"
+      }
+    },
+    {
+      "id": "p047",
+      "label": "different",
+      "a": {
+        "retailer": "walmart",
+        "retailerSku": "44390948",
+        "title": "Fresh Banana, Each",
+        "source": "fixture:fixtures/walmart/fresh-banana-each.html"
+      },
+      "b": {
+        "retailer": "walmart",
+        "retailerSku": "34143814",
+        "title": "Fresh Plantain, Each",
+        "source": "fixture:fixtures/walmart/search-banana.html"
+      },
+      "note": "Banana vs plantain."
+    },
+    {
+      "id": "p048",
+      "label": "different",
+      "a": {
+        "retailer": "walmart",
+        "retailerSku": "44390948",
+        "title": "Fresh Banana, Each",
+        "source": "fixture:fixtures/walmart/fresh-banana-each.html"
+      },
+      "b": {
+        "retailer": "walmart",
+        "retailerSku": "51259338",
+        "title": "Marketside Fresh Organic Bananas, Bunch",
+        "source": "fixture:fixtures/walmart/marketside-organic-bananas-bunch.html"
+      },
+      "note": "Conventional single vs organic bunch."
+    },
+    {
+      "id": "p049",
+      "label": "different",
+      "a": {
+        "retailer": "walmart",
+        "retailerSku": "44390948",
+        "title": "Fresh Banana, Each",
+        "source": "fixture:fixtures/walmart/fresh-banana-each.html"
+      },
+      "b": {
+        "retailer": "walmart",
+        "retailerSku": "14336395",
+        "title": "Great Value Sliced Bananas, 16 oz Bag",
+        "source": "fixture:fixtures/walmart/great-value-sliced-bananas-frozen-16oz.html"
+      },
+      "note": "Fresh vs frozen sliced."
+    },
+    {
+      "id": "p050",
+      "label": "different",
+      "a": {
+        "retailer": "target",
+        "retailerSku": "15013944",
+        "title": "Fresh Banana - each - Good & Gather™",
+        "brand": "Good & Gather",
+        "source": "fixture:fixtures/target/banana-each.html"
+      },
+      "b": {
+        "retailer": "target",
+        "retailerSku": "85759852",
+        "title": "Fresh Organic Bananas - 2lb - Good & Gather™",
+        "brand": "Good & Gather",
+        "source": "fixture:fixtures/target/organic-bananas-2lb.html"
+      },
+      "note": "Conventional single vs organic 2 lb bag."
+    },
+    {
+      "id": "p051",
+      "label": "different",
+      "a": {
+        "retailer": "target",
+        "retailerSku": "85759852",
+        "title": "Fresh Organic Bananas - 2lb - Good & Gather™",
+        "brand": "Good & Gather",
+        "source": "fixture:fixtures/target/organic-bananas-2lb.html"
+      },
+      "b": {
+        "retailer": "walmart",
+        "retailerSku": "51259338",
+        "title": "Marketside Fresh Organic Bananas, Bunch",
+        "source": "fixture:fixtures/walmart/marketside-organic-bananas-bunch.html"
+      },
+      "note": "Organic 2 lb bag vs organic bunch by weight."
+    },
+    {
+      "id": "p052",
+      "label": "different",
+      "a": {
+        "retailer": "instacart",
+        "store": "Walmart",
+        "retailerSku": "20654983",
+        "title": "Great Value Whole Vitamin D Milk",
+        "sizeText": "1 gal",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      },
+      "b": {
+        "retailer": "instacart",
+        "store": "Walmart",
+        "retailerSku": "20655081",
+        "title": "Great Value Vitamin D Whole Milk",
+        "sizeText": "0.5 gal",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      },
+      "note": "1 gal vs 0.5 gal."
+    },
+    {
+      "id": "p053",
+      "label": "different",
+      "a": {
+        "retailer": "instacart",
+        "store": "Walmart",
+        "retailerSku": "20630136",
+        "title": "Great Value 2% Reduced Fat Milk",
+        "sizeText": "128 oz",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      },
+      "b": {
+        "retailer": "instacart",
+        "store": "Walmart",
+        "retailerSku": "20558916",
+        "title": "Great Value 2% Reduced Fat Milk",
+        "sizeText": "64 oz",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      },
+      "note": "128 oz vs 64 oz."
+    },
+    {
+      "id": "p054",
+      "label": "different",
+      "a": {
+        "retailer": "instacart",
+        "store": "Walmart",
+        "retailerSku": "20654983",
+        "title": "Great Value Whole Vitamin D Milk",
+        "sizeText": "1 gal",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      },
+      "b": {
+        "retailer": "instacart",
+        "store": "Walmart",
+        "retailerSku": "20630136",
+        "title": "Great Value 2% Reduced Fat Milk",
+        "sizeText": "128 oz",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      },
+      "note": "Whole vs 2%, same size."
+    },
+    {
+      "id": "p055",
+      "label": "different",
+      "a": {
+        "retailer": "instacart",
+        "store": "Walmart",
+        "retailerSku": "17515383",
+        "title": "Great Value Milk 1% Low Fat",
+        "sizeText": "1 gal",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      },
+      "b": {
+        "retailer": "instacart",
+        "store": "Walmart",
+        "retailerSku": "20547054",
+        "title": "Great Value Fat Free Milk",
+        "sizeText": "0.5 gal",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      },
+      "note": "1% vs fat free."
+    },
+    {
+      "id": "p056",
+      "label": "different",
+      "a": {
+        "retailer": "instacart",
+        "store": "Walmart",
+        "retailerSku": "17515383",
+        "title": "Great Value Milk 1% Low Fat",
+        "sizeText": "1 gal",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      },
+      "b": {
+        "retailer": "instacart",
+        "store": "Walmart",
+        "retailerSku": "20654983",
+        "title": "Great Value Whole Vitamin D Milk",
+        "sizeText": "1 gal",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      },
+      "note": "1% vs whole."
+    },
+    {
+      "id": "p057",
+      "label": "different",
+      "a": {
+        "retailer": "instacart",
+        "store": "Giant Food Stores",
+        "retailerSku": "3192238",
+        "title": "Store Brand Whole Milk",
+        "sizeText": "1 gal",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      },
+      "b": {
+        "retailer": "instacart",
+        "store": "ALDI",
+        "retailerSku": "16902710",
+        "title": "Friendly Farms Whole Milk",
+        "sizeText": "1 gal",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      },
+      "note": "Two private labels."
+    },
+    {
+      "id": "p058",
+      "label": "different",
+      "a": {
+        "retailer": "instacart",
+        "store": "Giant Food Stores",
+        "retailerSku": "3192238",
+        "title": "Store Brand Whole Milk",
+        "sizeText": "1 gal",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      },
+      "b": {
+        "retailer": "instacart",
+        "store": "Giant Food Stores",
+        "retailerSku": "3139166",
+        "title": "Store Brand Whole Milk",
+        "sizeText": "0.5 gal",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      },
+      "note": "1 gal vs 0.5 gal."
+    },
+    {
+      "id": "p059",
+      "label": "different",
+      "a": {
+        "retailer": "instacart",
+        "store": "Giant Food Stores",
+        "retailerSku": "3192238",
+        "title": "Store Brand Whole Milk",
+        "sizeText": "1 gal",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      },
+      "b": {
+        "retailer": "instacart",
+        "store": "Giant Food Stores",
+        "retailerSku": "3139165",
+        "title": "Store Brand Reduced Fat Milk",
+        "sizeText": "1 gal",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      },
+      "note": "Whole vs reduced fat."
+    },
+    {
+      "id": "p060",
+      "label": "different",
+      "a": {
+        "retailer": "instacart",
+        "store": "Giant Food Stores",
+        "retailerSku": "17001281",
+        "title": "Store Brand Whole Milk",
+        "sizeText": "1 qt",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      },
+      "b": {
+        "retailer": "instacart",
+        "store": "Giant Food Stores",
+        "retailerSku": "3139166",
+        "title": "Store Brand Whole Milk",
+        "sizeText": "0.5 gal",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      },
+      "note": "1 qt vs 0.5 gal."
+    },
+    {
+      "id": "p061",
+      "label": "different",
+      "a": {
+        "retailer": "instacart",
+        "store": "Walmart",
+        "retailerSku": "16408615",
+        "title": "Lactaid 2% Reduced Fat Milk",
+        "sizeText": "96 fl oz",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      },
+      "b": {
+        "retailer": "instacart",
+        "store": "Giant Food Stores",
+        "retailerSku": "19257877",
+        "title": "Lactaid 2% Reduced Fat Milk Calcium Enriched",
+        "sizeText": "96 fl oz",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      },
+      "note": "Plain vs calcium enriched."
+    },
+    {
+      "id": "p062",
+      "label": "different",
+      "a": {
+        "retailer": "instacart",
+        "store": "Walmart",
+        "retailerSku": "16408615",
+        "title": "Lactaid 2% Reduced Fat Milk",
+        "sizeText": "96 fl oz",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      },
+      "b": {
+        "retailer": "instacart",
+        "store": "Walmart",
+        "title": "Lactaid 2% Reduced Fat Milk",
+        "sizeText": "64 fl oz",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      },
+      "note": "96 fl oz vs 64 fl oz."
+    },
+    {
+      "id": "p063",
+      "label": "different",
+      "a": {
+        "retailer": "instacart",
+        "store": "Walmart",
+        "title": "Lactaid Whole Milk",
+        "sizeText": "96 fl oz",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      },
+      "b": {
+        "retailer": "instacart",
+        "store": "Walmart",
+        "retailerSku": "16408615",
+        "title": "Lactaid 2% Reduced Fat Milk",
+        "sizeText": "96 fl oz",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      },
+      "note": "Whole vs 2%."
+    },
+    {
+      "id": "p064",
+      "label": "different",
+      "a": {
+        "retailer": "instacart",
+        "store": "ALDI",
+        "retailerSku": "18648487",
+        "title": "Friendly Farms 2% Lactose Free Milk",
+        "sizeText": "64 fl oz",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      },
+      "b": {
+        "retailer": "instacart",
+        "store": "ALDI",
+        "retailerSku": "20980944",
+        "title": "Friendly Farms LacFree Whole/LowFat",
+        "sizeText": "64 fl oz",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      },
+      "note": "2% lactose free vs LacFree whole/low fat."
+    },
+    {
+      "id": "p065",
+      "label": "different",
+      "a": {
+        "retailer": "instacart",
+        "store": "ALDI",
+        "retailerSku": "22075091",
+        "title": "Friendly Farms Lactose Free 2% Reduced Fat Ultra Filtered Milk",
+        "sizeText": "59 fl oz",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      },
+      "b": {
+        "retailer": "instacart",
+        "store": "Walmart",
+        "retailerSku": "1343109",
+        "title": "fairlife Whole Ultra-Filtered Milk, Lactose Free",
+        "sizeText": "52 fl oz",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      },
+      "note": "Aldi ultra-filtered vs fairlife, different sizes."
+    },
+    {
+      "id": "p066",
+      "label": "different",
+      "a": {
+        "retailer": "instacart",
+        "store": "ALDI",
+        "retailerSku": "18649227",
+        "title": "Simply Nature Organic Whole Milk",
+        "sizeText": "64 fl oz",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      },
+      "b": {
+        "retailer": "instacart",
+        "store": "ALDI",
+        "retailerSku": "21059061",
+        "title": "Simply Nature Organic Whole Omega-3 Milk",
+        "sizeText": "64 fl oz",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      },
+      "note": "Plain vs omega-3."
+    },
+    {
+      "id": "p067",
+      "label": "different",
+      "a": {
+        "retailer": "instacart",
+        "store": "ALDI",
+        "retailerSku": "18649227",
+        "title": "Simply Nature Organic Whole Milk",
+        "sizeText": "64 fl oz",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      },
+      "b": {
+        "retailer": "instacart",
+        "store": "ALDI",
+        "retailerSku": "19546425",
+        "title": "Simply Nature Organic 2% Milk",
+        "sizeText": "64 fl oz",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      },
+      "note": "Whole vs 2%."
+    },
+    {
+      "id": "p068",
+      "label": "different",
+      "a": {
+        "retailer": "instacart",
+        "store": "Walmart",
+        "title": "Horizon Organic Whole Milk, 64 fl oz Half Gallon Carton",
+        "sizeText": "64 fl oz",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      },
+      "b": {
+        "retailer": "instacart",
+        "store": "ALDI",
+        "retailerSku": "18649227",
+        "title": "Simply Nature Organic Whole Milk",
+        "sizeText": "64 fl oz",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      },
+      "note": "Horizon vs Simply Nature organic whole milk."
+    },
+    {
+      "id": "p069",
+      "label": "different",
+      "a": {
+        "retailer": "instacart",
+        "store": "Giant Food Stores",
+        "retailerSku": "3131865",
+        "title": "Nature's Promise Organic Whole Milk",
+        "sizeText": "0.5 gal",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      },
+      "b": {
+        "retailer": "instacart",
+        "store": "ALDI",
+        "retailerSku": "18649227",
+        "title": "Simply Nature Organic Whole Milk",
+        "sizeText": "64 fl oz",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      },
+      "note": "Nature's Promise vs Simply Nature."
+    },
+    {
+      "id": "p070",
+      "label": "different",
+      "a": {
+        "retailer": "instacart",
+        "store": "Giant Food Stores",
+        "retailerSku": "17090519",
+        "title": "Lehigh Valley Dairy Farms Milk, Whole, Vitamin D",
+        "sizeText": "1 gal",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      },
+      "b": {
+        "retailer": "instacart",
+        "store": "Giant Food Stores",
+        "retailerSku": "144985",
+        "title": "Lehigh Valley Dairy Farms Milk, 2% Reduced Fat",
+        "sizeText": "1 gal",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      },
+      "note": "Whole vs 2%."
+    },
+    {
+      "id": "p071",
+      "label": "different",
+      "a": {
+        "retailer": "instacart",
+        "store": "ALDI",
+        "retailerSku": "16902710",
+        "title": "Friendly Farms Whole Milk",
+        "sizeText": "1 gal",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      },
+      "b": {
+        "retailer": "instacart",
+        "store": "ALDI",
+        "retailerSku": "18647583",
+        "title": "Friendly Farms Whole Milk",
+        "sizeText": "0.5 gal",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      },
+      "note": "1 gal vs 0.5 gal."
+    },
+    {
+      "id": "p072",
+      "label": "different",
+      "a": {
+        "retailer": "instacart",
+        "store": "ALDI",
+        "retailerSku": "20957684",
+        "title": "Friendly Farms 2% Milk",
+        "sizeText": "1 gal",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      },
+      "b": {
+        "retailer": "instacart",
+        "store": "ALDI",
+        "retailerSku": "18647971",
+        "title": "Friendly Farms 1% Milk",
+        "sizeText": "1 gal",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      },
+      "note": "2% vs 1%."
+    },
+    {
+      "id": "p073",
+      "label": "different",
+      "a": {
+        "retailer": "instacart",
+        "store": "ALDI",
+        "retailerSku": "20975177",
+        "title": "Friendly Farms Skim Milk",
+        "sizeText": "0.5 gal",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      },
+      "b": {
+        "retailer": "instacart",
+        "store": "ALDI",
+        "retailerSku": "18647583",
+        "title": "Friendly Farms Whole Milk",
+        "sizeText": "0.5 gal",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      },
+      "note": "Skim vs whole."
+    },
+    {
+      "id": "p074",
+      "label": "different",
+      "a": {
+        "retailer": "instacart",
+        "store": "ALDI",
+        "retailerSku": "20957684",
+        "title": "Friendly Farms 2% Milk",
+        "sizeText": "1 gal",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      },
+      "b": {
+        "retailer": "instacart",
+        "store": "ALDI",
+        "retailerSku": "20986614",
+        "title": "Friendly Farms 2% Milk",
+        "sizeText": "0.5 gal",
+        "source": "fixture:fixtures/instacart/walmart-search-milk.html"
+      },
+      "note": "1 gal vs 0.5 gal."
+    },
+    {
+      "id": "p075",
+      "label": "different",
+      "a": {
+        "retailer": "walmart",
+        "retailerSku": "19316063089",
+        "title": "Kauffman Orchards Freeze-Dried Banana Slices- 1.5 Ounce Bag",
+        "source": "fixture:fixtures/walmart/search-banana.html"
+      },
+      "b": {
+        "retailer": "walmart",
+        "retailerSku": "19316063090",
+        "title": "Kauffman Orchards Freeze-Dried Banana Slices- 1.5 Ounce Bag Pack of 3",
+        "source": "fixture:fixtures/walmart/search-banana.html"
+      },
+      "note": "Single vs pack of 3."
+    },
+    {
+      "id": "p076",
+      "label": "different",
+      "a": {
+        "retailer": "walmart",
+        "retailerSku": "193164902",
+        "title": "Mavuno Harvest Organic Dried Fruit, Banana, 2 Ozbag",
+        "source": "fixture:fixtures/walmart/search-banana.html"
+      },
+      "b": {
+        "retailer": "walmart",
+        "retailerSku": "9031061887",
+        "title": "Mavuno Harvest, Organic Dried Banana, 2 oz (56 g) Pack of 2",
+        "source": "fixture:fixtures/walmart/search-banana.html"
+      },
+      "note": "Single 2 oz bag vs pack of 2."
+    },
+    {
+      "id": "p077",
+      "label": "different",
+      "a": {
+        "retailer": "walmart",
+        "retailerSku": "9031061887",
+        "title": "Mavuno Harvest, Organic Dried Banana, 2 oz (56 g) Pack of 2",
+        "source": "fixture:fixtures/walmart/search-banana.html"
+      },
+      "b": {
+        "retailer": "walmart",
+        "retailerSku": "623057263",
+        "title": "Mavuno Harvest Organic Dried Bananas, 2 pz [Pack of 6]",
+        "source": "fixture:fixtures/walmart/search-banana.html"
+      },
+      "note": "Pack of 2 vs pack of 6."
+    },
+    {
+      "id": "p078",
+      "label": "different",
+      "a": {
+        "retailer": "walmart",
+        "retailerSku": "712149779",
+        "title": "Made in Nature, Organic Dried Banana, 4 oz Pack of 4",
+        "source": "fixture:fixtures/walmart/search-banana.html"
+      },
+      "b": {
+        "retailer": "walmart",
+        "retailerSku": "914036035",
+        "title": "Made in Nature, Organic Dried Banana, 4 oz Pack of 3",
+        "source": "fixture:fixtures/walmart/search-banana.html"
+      },
+      "note": "Pack of 4 vs pack of 3."
+    },
+    {
+      "id": "p079",
+      "label": "different",
+      "a": {
+        "retailer": "walmart",
+        "retailerSku": "133275367",
+        "title": "Made in Nature Organic Dried Banana Slices, 4 oz",
+        "source": "fixture:fixtures/walmart/search-banana.html"
+      },
+      "b": {
+        "retailer": "walmart",
+        "retailerSku": "712149779",
+        "title": "Made in Nature, Organic Dried Banana, 4 oz Pack of 4",
+        "source": "fixture:fixtures/walmart/search-banana.html"
+      },
+      "note": "Single 4 oz vs pack of 4."
+    },
+    {
+      "id": "p080",
+      "label": "different",
+      "a": {
+        "retailer": "walmart",
+        "retailerSku": "20823866546",
+        "title": "BANACO Premium Dried Whole Bananas 100% Natural, No Added Sugar, Healthy Chewy Snack - Value Packs of 4",
+        "source": "fixture:fixtures/walmart/search-banana.html"
+      },
+      "b": {
+        "retailer": "walmart",
+        "retailerSku": "20850324637",
+        "title": "BANACO Premium Dried Whole Bananas 100% Natural, No Added Sugar, Healthy Chewy Snack - Value Packs of 6",
+        "source": "fixture:fixtures/walmart/search-banana.html"
+      },
+      "note": "Packs of 4 vs 6."
+    },
+    {
+      "id": "p081",
+      "label": "different",
+      "a": {
+        "retailer": "walmart",
+        "retailerSku": "20640356289",
+        "title": "BANACO Premium Dried Whole Bananas 100% Natural, No Added Sugar, Healthy Chewy Snack - Pack 5",
+        "source": "fixture:fixtures/walmart/search-banana.html"
+      },
+      "b": {
+        "retailer": "walmart",
+        "retailerSku": "20850374352",
+        "title": "BANACO Premium Dried Whole Bananas 100% Natural, No Added Sugar, Healthy Chewy Snack - Pack 8",
+        "source": "fixture:fixtures/walmart/search-banana.html"
+      },
+      "note": "Pack 5 vs pack 8."
+    },
+    {
+      "id": "p082",
+      "label": "different",
+      "a": {
+        "retailer": "walmart",
+        "retailerSku": "20607365160",
+        "title": "BANACO Premium Dried Whole Bananas 100% Natural, No Added Sugar, Healthy Chewy Snack",
+        "source": "fixture:fixtures/walmart/search-banana.html"
+      },
+      "b": {
+        "retailer": "walmart",
+        "retailerSku": "20823866546",
+        "title": "BANACO Premium Dried Whole Bananas 100% Natural, No Added Sugar, Healthy Chewy Snack - Value Packs of 4",
+        "source": "fixture:fixtures/walmart/search-banana.html"
+      },
+      "note": "Single vs pack of 4."
+    },
+    {
+      "id": "p083",
+      "label": "different",
+      "a": {
+        "retailer": "walmart",
+        "retailerSku": "2664639940",
+        "title": "CRISPY GREEN Freeze Dried Banana, 3.39 OZ",
+        "source": "fixture:fixtures/walmart/search-banana.html"
+      },
+      "b": {
+        "retailer": "walmart",
+        "retailerSku": "3050515211",
+        "title": "Crispy Green Dried Banana 3.39 oz (Pack Of 8)",
+        "source": "fixture:fixtures/walmart/search-banana.html"
+      },
+      "note": "Single vs pack of 8."
+    },
+    {
+      "id": "p084",
+      "label": "different",
+      "a": {
+        "retailer": "walmart",
+        "retailerSku": "5048601316",
+        "title": "3 Packs Trader Joes Dried Baby Bananas, All Natural",
+        "source": "fixture:fixtures/walmart/search-banana.html"
+      },
+      "b": {
+        "retailer": "walmart",
+        "retailerSku": "15153517499",
+        "title": "Trader Joe's Dried Baby Bananas Nothing Added Fruit (6 oz)",
+        "source": "fixture:fixtures/walmart/search-banana.html"
+      },
+      "note": "3 packs vs a single 6 oz."
+    },
+    {
+      "id": "p085",
+      "label": "different",
+      "a": {
+        "retailer": "walmart",
+        "retailerSku": "1302368569",
+        "title": "Trader Joes Freeze Dried Bananas (4 Pack)",
+        "source": "fixture:fixtures/walmart/search-banana.html"
+      },
+      "b": {
+        "retailer": "walmart",
+        "retailerSku": "5048601316",
+        "title": "3 Packs Trader Joes Dried Baby Bananas, All Natural",
+        "source": "fixture:fixtures/walmart/search-banana.html"
+      },
+      "note": "Freeze dried 4 pack vs dried baby bananas 3 pack."
+    },
+    {
+      "id": "p086",
+      "label": "different",
+      "a": {
+        "retailer": "walmart",
+        "retailerSku": "418846131",
+        "title": "Organic Dried Banana Slices, 6 Ounces — Non-GMO, Raw, Vegan — by Food to Live",
+        "source": "fixture:fixtures/walmart/search-banana.html"
+      },
+      "b": {
+        "retailer": "walmart",
+        "retailerSku": "294239651",
+        "title": "Organic Dried Banana Slices, 1.5 Pounds Non-GMO, Raw, Vegan by Food to Live",
+        "source": "fixture:fixtures/walmart/search-banana.html"
+      },
+      "note": "6 oz vs 1.5 lb."
+    },
+    {
+      "id": "p087",
+      "label": "different",
+      "a": {
+        "retailer": "walmart",
+        "retailerSku": "418846131",
+        "title": "Organic Dried Banana Slices, 6 Ounces — Non-GMO, Raw, Vegan — by Food to Live",
+        "source": "fixture:fixtures/walmart/search-banana.html"
+      },
+      "b": {
+        "retailer": "walmart",
+        "retailerSku": "744073813",
+        "title": "Organic Dried Banana Powder (Green), 0.5 Pounds Non-GMO, Raw, Kosher, Vegan by Food to Live",
+        "source": "fixture:fixtures/walmart/search-banana.html"
+      },
+      "note": "Slices vs powder."
+    },
+    {
+      "id": "p088",
+      "label": "different",
+      "a": {
+        "retailer": "walmart",
+        "retailerSku": "543786099",
+        "title": "Dole Individually Quick Frozen Sliced Banana, 30 Pound -- 1 Each",
+        "source": "fixture:fixtures/walmart/search-banana.html"
+      },
+      "b": {
+        "retailer": "walmart",
+        "retailerSku": "697623223",
+        "title": "Dole Chef-Ready Cuts individually Quick Frozen Zip Bag Sliced Banana, 5 lb - Case of 2",
+        "source": "fixture:fixtures/walmart/search-banana.html"
+      },
+      "note": "30 lb vs 5 lb case of 2."
+    },
+    {
+      "id": "p089",
+      "label": "different",
+      "a": {
+        "retailer": "walmart",
+        "retailerSku": "469402829",
+        "title": "Gerber 1st Foods Baby Food, Banana Puree, Clean Label Project, 2 oz Tubs (2 Pack)",
+        "source": "fixture:fixtures/walmart/search-banana.html"
+      },
+      "b": {
+        "retailer": "target",
+        "retailerSku": "14599316",
+        "title": "Gerber Non-GMO Banana Baby Food Puree Stage 2 - 4oz/2ct: Age Level 6 Months & Up, Kosher Certified, Ready to Eat",
+        "brand": "Gerber",
+        "source": "fixture:fixtures/target/search-banana.html"
+      },
+      "note": "1st Foods (stage 1) 2 oz tubs vs Stage 2 4oz/2ct."
+    },
+    {
+      "id": "p090",
+      "label": "different",
+      "a": {
+        "retailer": "walmart",
+        "retailerSku": "137862727",
+        "title": "Great Value Strawberry Banana Blend, 48 oz (Frozen)",
+        "source": "fixture:fixtures/walmart/search-banana.html"
+      },
+      "b": {
+        "retailer": "target",
+        "retailerSku": "54541751",
+        "title": "Strawberry Banana Frozen Fruit Blend - 48oz - Good & Gather™",
+        "brand": "Good & Gather",
+        "source": "fixture:fixtures/target/search-banana.html"
+      },
+      "note": "Great Value vs Good & Gather frozen blends."
+    },
+    {
+      "id": "p091",
+      "label": "different",
+      "a": {
+        "retailer": "target",
+        "retailerSku": "95016442",
+        "title": "Strawberry Banana Pouch - 3.5 oz - Good & Gather™",
+        "brand": "Good & Gather",
+        "source": "fixture:fixtures/target/search-banana.html"
+      },
+      "b": {
+        "retailer": "target",
+        "retailerSku": "95016440",
+        "title": "Apple, Banana and Kale Pouch - 3.5oz - Good & Gather™",
+        "brand": "Good & Gather",
+        "source": "fixture:fixtures/target/search-banana.html"
+      },
+      "note": "Strawberry banana vs apple banana kale."
+    },
+    {
+      "id": "p092",
+      "label": "different",
+      "a": {
+        "retailer": "target",
+        "retailerSku": "89812070",
+        "title": "NOKA Organic Healthy Snacks Plant Protein Superfood Smoothie Super Berry - 16.9oz/4pk",
+        "brand": "NOKA",
+        "source": "fixture:fixtures/target/search-banana.html"
+      },
+      "b": {
+        "retailer": "target",
+        "retailerSku": "89812072",
+        "title": "NOKA Organic Healthy Snacks Plant Protein Superfood Smoothie Strawberry Banana - 16.9oz/4pk",
+        "brand": "NOKA",
+        "source": "fixture:fixtures/target/search-banana.html"
+      },
+      "note": "Super Berry vs Strawberry Banana smoothie."
+    },
+    {
+      "id": "p093",
+      "label": "different",
+      "a": {
+        "retailer": "target",
+        "retailerSku": "95034841",
+        "title": "GoNanas Cinnamon Roll Banana Bread Mini Muffins - 7.5oz/5ct: Dairy-Free, Vegan",
+        "brand": "GoNanas",
+        "source": "fixture:fixtures/target/search-banana.html"
+      },
+      "b": {
+        "retailer": "target",
+        "retailerSku": "88446819",
+        "title": "GoNanas Chocolate Chip Banana Bread Mix - 12.3oz",
+        "brand": "GoNanas",
+        "source": "fixture:fixtures/target/search-banana.html"
+      },
+      "note": "Mini muffins vs bread mix."
+    },
+    {
+      "id": "p094",
+      "label": "different",
+      "a": {
+        "retailer": "target",
+        "retailerSku": "53519961",
+        "title": "Extra Large Bi-Color Seedless Grapes - 2lb",
+        "source": "fixture:fixtures/target/search-banana.html"
+      },
+      "b": {
+        "retailer": "target",
+        "retailerSku": "85668239",
+        "title": "Fresh Organic Green Seedless Grapes - 1.5lbs",
+        "source": "fixture:fixtures/target/search-banana.html"
+      },
+      "note": "Bi-color vs organic green."
+    },
+    {
+      "id": "p095",
+      "label": "different",
+      "a": {
+        "retailer": "target",
+        "retailerSku": "84005885",
+        "title": "Fresh Navel Oranges - 4lb Bag - Good & Gather™",
+        "brand": "Good & Gather",
+        "source": "fixture:fixtures/target/search-banana.html"
+      },
+      "b": {
+        "retailer": "target",
+        "retailerSku": "87689905",
+        "title": "Fresh Sun Beams Mandarin Oranges - 3lbs - Good & Gather™",
+        "brand": "Good & Gather",
+        "source": "fixture:fixtures/target/search-banana.html"
+      },
+      "note": "Navel vs mandarin."
+    },
+    {
+      "id": "p096",
+      "label": "different",
+      "a": {
+        "retailer": "instacart",
+        "store": "Wegmans",
+        "retailerSku": "34780662",
+        "title": "Wegmans Red Seedless Grapes, Bagged",
+        "source": "fixture:fixtures/instacart/wegmans-red-seedless-grapes.html"
+      },
+      "b": {
+        "retailer": "target",
+        "retailerSku": "85668239",
+        "title": "Fresh Organic Green Seedless Grapes - 1.5lbs",
+        "source": "fixture:fixtures/target/search-banana.html"
+      },
+      "note": "Red vs green seedless grapes."
+    },
+    {
+      "id": "p097",
+      "label": "different",
+      "a": {
+        "retailer": "instacart",
+        "store": "Wegmans",
+        "retailerSku": "17327037",
+        "title": "Organic Strawberries",
+        "sizeText": "16 oz",
+        "source": "fixture:fixtures/instacart/wegmans-organic-strawberries-16oz.html"
+      },
+      "b": {
+        "retailer": "instacart",
+        "title": "Strawberries",
+        "sizeText": "16 oz",
+        "store": "Wegmans",
+        "source": "composed"
+      },
+      "note": "Organic vs conventional."
+    },
+    {
+      "id": "p098",
+      "label": "different",
+      "a": {
+        "retailer": "walmart",
+        "retailerSku": "44390948",
+        "title": "Fresh Banana, Each",
+        "source": "fixture:fixtures/walmart/fresh-banana-each.html"
+      },
+      "b": {
+        "retailer": "walmart",
+        "retailerSku": "20809467104",
+        "title": "MicroStarts Live Dwarf Cavendish Banana - 2 Trees in 4 inch Pots",
+        "source": "fixture:fixtures/walmart/search-banana.html"
+      },
+      "note": "Fruit vs a banana tree."
+    },
+    {
+      "id": "p099",
+      "label": "different",
+      "a": {
+        "retailer": "walmart",
+        "title": "Great Value Whole Vitamin D Milk, Gallon",
+        "upc": "078742351001",
+        "source": "composed"
+      },
+      "b": {
+        "retailer": "target",
+        "title": "Great Value Whole Vitamin D Milk, Gallon",
+        "upc": "078742351018",
+        "source": "composed"
+      },
+      "note": "Identical titles, different valid UPCs: the code wins."
+    },
+    {
+      "id": "p100",
+      "label": "different",
+      "a": {
+        "retailer": "walmart",
+        "retailerSku": "14336395",
+        "title": "Great Value Sliced Bananas, 16 oz Bag",
+        "source": "fixture:fixtures/walmart/great-value-sliced-bananas-frozen-16oz.html"
+      },
+      "b": {
+        "retailer": "walmart",
+        "retailerSku": "137862727",
+        "title": "Great Value Strawberry Banana Blend, 48 oz (Frozen)",
+        "source": "fixture:fixtures/walmart/search-banana.html"
+      },
+      "note": "Sliced bananas vs strawberry banana blend."
+    }
+  ]
+}

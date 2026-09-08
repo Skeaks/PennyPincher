@@ -2,10 +2,7 @@
   "note": "S16 pilot configuration. metro and retailer accepted per plan.md recommendation on 2026-09-08. startDate is null until the preconditions in plan.md are met. counselReviewed is the date counsel signed off ADR 0003, or null.",
   "metro": "Central New Jersey (zip3 085/086)",
   "retailer": "target",
-  "zip3s": [
-    "085",
-    "086"
-  ],
+  "zip3s": ["085", "086"],
   "recruitingSource": "Jamie's personal network first (no counsel review needed for it); the waitlist on the landing page (apps/web) after counsel has reviewed ADR 0003.",
   "startDate": null,
   "weeks": 2,

@@ -9,10 +9,10 @@ here must change there too.
 
 | | Value in `pilot.json` | Status |
 |---|---|---|
-| Metro | `X` | Placeholder, given as "X" when the session started. Replace before recruiting. |
-| Retailer | `Y` | Placeholder, given as "Y". Must become `instacart`, `target` or `walmart`; the tool refuses to run until it does. |
+| Metro | `Central New Jersey (zip3 085/086)` | Set 2026-09-08, per the recommendation below. |
+| Retailer | `target` | Set 2026-09-08, per the recommendation below. |
 
-Recommendation, for Jamie to accept or overrule with one edit to `pilot.json`:
+Recommendation, accepted by Jamie on 2026-09-08 (kept here so the reasoning stays with the choice):
 
 - **Retailer: `target`.** It is the only adapter where the lever probe produces comparisons
   today: Target pages carry a store id on both the logged-in and the anonymous side, and S02
@@ -67,7 +67,7 @@ Preconditions, in order:
    the personal-network group does not need the landing page.
 2. Jamie submits the unlisted Web Store listing and it is approved (`docs/webstore.md`).
 3. `PILOT_TOKEN` is set on the production Worker (`docs/deploy.md`) and in the panelists' build.
-4. Metro and retailer are set in `pilot.json` and this file.
+4. Metro and retailer are set in `pilot.json` and this file. Done 2026-09-08.
 5. For anyone outside the personal network: counsel has reviewed ADR 0003.
 
 ## Producing a week report

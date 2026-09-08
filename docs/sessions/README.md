@@ -25,9 +25,9 @@ and do that session."*
 | [S10](S10-stats-hardening.md) | Stats hardening | Stats | S09 | Sticky-panel property tests, Stryker in nightly (88% local), `detectShift` stub. **Done 2026-09-07.** |
 | [S11](S11-query-api-and-ladder-ui.md) | Query API + ladder popup | Ingest, Capture | S07, S09 | `GET /v1/cells/:cellKey` (one vote per panelist); 15-minute sync upload; ladder + UNRESOLVED + contribution counter in popup. **Done 2026-09-07.** |
 | [S12](S12-adapters-target-walmart.md) | Adapters 2 and 3 + health beacon | Capture | S05, S17, S11 | Target, Walmart adapters (product pages + search tiles), adapter health beacon + `/v1/adapter-health`. **Done 2026-09-07.** |
-| [S13](S13-product-identity.md) | Product identity | Ingest | S07 | `packages/normalize`: UPC + fuzzy; golden fixtures |
+| [S13](S13-product-identity.md) | Product identity | Ingest | S07 | `packages/normalize`: GTIN + size parse + fuzzy match; 100 golden pairs (precision 1.0, recall 0.91); `canonical_id` at ingest. **Done 2026-09-08.** |
 | [S14](S14-ingest-hardening.md) | Ingest hardening + deletion | Ingest | S07 | Rate limits, semantic dedup, abuse flag, 7-day panelist rotation, `DELETE /v1/panelists/:id`, 90-day retention. **Done 2026-09-07.** |
-| [S15](S15-pilot-pack.md) | Pilot pack | Compliance, Web | S06, S11, S14 | Privacy policy, consent copy, unlisted Web Store build, static landing + waitlist |
+| [S15](S15-pilot-pack.md) | Pilot pack | Compliance, Web | S06, S11, S14 | Consent v6 enumerating all five requests; claims-word test; privacy policy + consent drafts; Web Store doc + zip; landing + waitlist on Pages. **Done 2026-09-08.** |
 | [S16](S16-closed-pilot.md) | Closed pilot + variance gate | All | S15 | 30 to 60 panelists, one metro, one retailer; go / pivot decision |
 
 ## Phase 2 (briefs written after S16's decision)

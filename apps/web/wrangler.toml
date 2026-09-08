@@ -16,5 +16,5 @@ compatibility_date = "2026-08-01"
 [[d1_databases]]
 binding = "WAITLIST_DB"
 database_name = "pennypincher-waitlist"
-database_id = "00000000-0000-0000-0000-000000000000" # TODO(Jamie): the real id, see above
+database_id = "64b45c1b-d059-49d2-b146-91a9c9c8ac01"
 migrations_dir = "migrations"

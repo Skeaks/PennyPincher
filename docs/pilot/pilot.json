@@ -1,0 +1,19 @@
+{
+  "note": "S16 pilot configuration. metro and retailer were given as placeholders (X, Y) when the session started; the report tool refuses to run until retailer is one of instacart, target, walmart. startDate is null until the preconditions in plan.md are met. counselReviewed is the date counsel signed off ADR 0003, or null.",
+  "metro": "X",
+  "retailer": "Y",
+  "zip3s": [],
+  "recruitingSource": "Jamie's personal network first (no counsel review needed for it); the waitlist on the landing page (apps/web) after counsel has reviewed ADR 0003.",
+  "startDate": null,
+  "weeks": 2,
+  "panelTarget": { "min": 30, "max": 60 },
+  "skuCount": 200,
+  "counselReviewed": null,
+  "apiBaseUrl": "https://pennypincher-api.jamesjlee04.workers.dev",
+  "thresholds": {
+    "multiTierShare": 0.2,
+    "probeDifferenceRate": 0.1,
+    "minResolvedCells": 20,
+    "minProbeChecks": 50
+  }
+}

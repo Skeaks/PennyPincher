@@ -147,6 +147,37 @@ importers:
         specifier: 22.10.5
         version: 22.10.5
 
+  tools/pilot-report:
+    dependencies:
+      '@pennypincher/schema':
+        specifier: workspace:*
+        version: link:../../packages/schema
+      '@pennypincher/stats':
+        specifier: workspace:*
+        version: link:../../packages/stats
+      api:
+        specifier: workspace:*
+        version: link:../../apps/api
+      zod:
+        specifier: 3.24.1
+        version: 3.24.1
+    devDependencies:
+      '@pennypincher/synth':
+        specifier: workspace:*
+        version: link:../../packages/synth
+      '@types/node':
+        specifier: 22.10.5
+        version: 22.10.5
+      tsx:
+        specifier: 4.19.2
+        version: 4.19.2
+      typescript:
+        specifier: 5.7.3
+        version: 5.7.3
+      vitest:
+        specifier: 3.0.5
+        version: 3.0.5(@types/node@22.10.5)(happy-dom@15.11.7)(jiti@2.7.0)(tsx@4.19.2)
+
   tools/scrub:
     dependencies:
       '@pennypincher/schema':

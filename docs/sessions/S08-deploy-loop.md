@@ -27,7 +27,8 @@ first and paste the results into the session prompt:
    Each prints a `database_id`; give both to the session (they are not secrets; they go in
    `wrangler.toml`).
 3. Create an API token at My Profile > API Tokens > Create Token > "Edit Cloudflare Workers"
-   template, and add **D1: Edit** to its permissions. Store it as the GitHub repo secret
+   template, and add **D1: Edit** and **Cloudflare Pages: Edit** (account-level) to its
+   permissions; the Pages permission is what the S15 site deploy needs. Store it as the GitHub repo secret
    `CLOUDFLARE_API_TOKEN`; store the Account ID as `CLOUDFLARE_ACCOUNT_ID`
    (Settings > Secrets and variables > Actions). Never paste the token into chat.
 4. Generate the pilot bearer token yourself (`openssl rand -hex 32`) and set it with

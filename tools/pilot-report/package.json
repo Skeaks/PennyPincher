@@ -1,0 +1,25 @@
+{
+  "name": "@pennypincher/pilot-report",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Closed-pilot reporting (S16). Reads a D1 export of the week's observations and the query API, writes docs/pilot/week-N.md, the reconciliation of the stats constants against real tier shares, and the go / pivot decision.",
+  "type": "module",
+  "scripts": {
+    "report": "tsx src/cli.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@pennypincher/schema": "workspace:*",
+    "@pennypincher/stats": "workspace:*",
+    "api": "workspace:*",
+    "zod": "3.24.1"
+  },
+  "devDependencies": {
+    "@pennypincher/synth": "workspace:*",
+    "@types/node": "22.10.5",
+    "tsx": "4.19.2",
+    "typescript": "5.7.3",
+    "vitest": "3.0.5"
+  }
+}
